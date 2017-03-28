@@ -121,7 +121,7 @@ X['class'] = training[1]
 
 # make and save plot
 sns.set_palette(sns.color_palette("Set3", 10))
-sns.lmplot('PC1', 'PC2', data=X, hue='class', fit_reg=False).savefig('C:\\Users\\riemang\\Documents\\MachineLearningPres\\UntitledImages\\python_PCA.png')
+sns.lmplot('PC1', 'PC2', data=X, hue='class', fit_reg=False).savefig('C:\\Users\\riemang\\Documents\\MachineLearningPres\\Untitled\\Images\\python_PCA.png')
 ```
 
 
