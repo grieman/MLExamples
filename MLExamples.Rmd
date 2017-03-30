@@ -11,9 +11,10 @@ output:
       depth: 2
 ---
 
-```{r setup, include=FALSE}
+```{r setup}
 library(magrittr)
 library(ggplot2)
+library(feather)
 
 load_mnist <- function() {
   load_image_file <- function(filename) {
@@ -50,6 +51,9 @@ show_digit <- function(arr784, col=gray(12:1/12), ...) {
 load_mnist()
 
 trainset <- as.data.frame(train$x);trainset$y <- train$y
+testset <- as.data.frame(test$x);testset$y <- test$y
+write_feather(trainset, "trainset.feather")
+write_feather(trainset, "testset.feather")
 ```
 
 # Data
@@ -66,7 +70,6 @@ These methods aren't quite classifiers, but they do simplify the dataset and mak
 
 ## Principal Component Analysis
 
--------
 
 ### Theory
 Principal Component Analysis (PCA) is a transformation algorithm that attempts to find the Principal Components (PC) of a data set, such that the first principal component (PC1) accounts for as much of the data's variation as possible, and that each subsequent PC accounts for the largest possible amount of variance while being orthagonal to the previous PCs.
@@ -99,16 +102,15 @@ prop.pca <- modpca$sdev^2/sum(modpca$sdev^2)
 #### Python
 
 ```{python, PCA python}
-from mnist import MNIST
+import feather
 import pandas as pd
 from sklearn.decomposition import RandomizedPCA
 import seaborn as sns
 
-# bring in data and make pandas DataFrames
-mndata = MNIST('C:\\Users\\riemang\\Documents\\MachineLearningPres\\Untitled\\mnist')
-training = mndata.load_training()
-imgs = pd.DataFrame(training[0])
-labels = pd.Series(training[1])
+#load the data that was loaded then saved in R
+train = feather.read_dataframe("C:\\Users\\riemang\\Documents\\MachineLearningPres\\Untitled\\trainset.feather")
+lbls = train['y']
+imgs = train.drop('y', 1)
 
 # train model
 pca = RandomizedPCA(n_components=2) 
@@ -117,7 +119,7 @@ X = pca.fit_transform(imgs)
 # form DataFrame and rename columns
 X = pd.DataFrame(X)
 X.columns = ['PC1', 'PC2']
-X['class'] = training[1]
+X['class'] = lbls
 
 # make and save plot
 sns.set_palette(sns.color_palette("Set3", 10))
@@ -150,3 +152,28 @@ ggplot2::ggplot(data=as.data.frame(modpca$x[,1:2]), ggplot2::aes(x=PC1, y=PC2, c
 Similarly, this is the plot that the above python code generated:
 
 ![](Images/python_PCA.png)
+
+
+
+## LDA
+
+### Theory
+### Use Cases
+### Examples
+
+# SVM
+
+# KNN
+
+# Bayesian
+
+# Trees
+
+# Neural Networks
+
+# HMM
+
+# Ensemble Techniques
+
+## Random Forest
+## Bagging & Boosting
