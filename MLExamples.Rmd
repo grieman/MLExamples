@@ -63,7 +63,7 @@ write_feather(testset, "testset.feather")
 
 # Data
 
-For this example, we will use the [MNIST handwritten digits dataset](http://yann.lecun.com/exdb/mnist/) as it has already been prepared and offers an interesting, commonly used classification problem. Each digit is a 28x28 pixelated image, stored as a vector of 784 black/white values ranging from 0 to 255. This also allows us to more easily visualize each data point - having each column correspond to part of an image rather than to the readout of a sensor allows for a simpler understanding of the classes. Everyone has an idea of what _four_ looks like, even though there are many ways to write it. To save time and processing power, we will only use the digits 0, 1, 7, and 8. The first digit in the train set is labelled as a `r trainset$y[1]`, and looks like this:
+For this example, we will use the [MNIST handwritten digits dataset](http://yann.lecun.com/exdb/mnist/) as it has already been prepared and offers an interesting, commonly used classification problem. Each digit is a 28x28 pixelated image, stored as a vector of 784 black/white values ranging from 0 to 255. This also allows us to more easily visualize each data point - having each column correspond to part of an image rather than to the readout of a sensor allows for a simpler understanding of the classes. Everyone has an idea of what _four_ looks like, even though there are many ways to write it. To save time and processing power, we will only use the digits 1,4, and 9. The first digit in the train set is labelled as a `r trainset$y[1]`, and looks like this:
 
 ```{r}
 show_digit(trainset[1, 1:784])
@@ -115,7 +115,7 @@ import seaborn as sns
 
 path = os.getcwd()
 trainpath = os.path.join(path, "trainset.feather")
-plotpath = os.path.join(path, "python_PCA.png")
+plotpath = os.path.join(path, "Images\python_PCA.png")
 
 #load the data that was loaded then saved in R
 train = feather.read_dataframe(trainpath)
@@ -238,7 +238,45 @@ df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
 print(df_confusion)
 ```
 
-# KNN
+# K-Nearest Neighbors
+
+### Theory
+K-Nearest Neighbors uses a majority vote of the closes $k$ points to classify any given point. The distance metric and value of $k$ can be modified, but a relatively small, odd $k$ value produces acceptable results without requiring too much processing power. 
+### Use Cases
+### Examples
+
+```{r}
+modknn <- class::knn(trainset[-c(785)], testset[-c(785)], trainset$y,k=3)
+pred <- as.numeric(levels(modknn))[modknn]
+RRhelpr::printClassificationTable(testset$y,modknn,"KNN")
+```
+
+```{python}
+import feather, os
+import pandas as pd
+from sklearn.neighbors import KNeighborsClassifier
+
+path = os.getcwd()
+trainpath = os.path.join(path, "trainset.feather")
+testpath = os.path.join(path, "testset.feather")
+
+train = feather.read_dataframe(trainpath)
+lbls = train['y']
+imgs = train.drop('y', 1)
+test = feather.read_dataframe(testpath)
+lbls_test = test['y']
+imgs_test = test.drop('y', 1)
+
+# Fit the model on the training data.
+knn = KNeighborsClassifier(n_neighbors=5)
+knn.fit(imgs, lbls)
+
+# Make point predictions on the test set using the fit model.
+predictions = knn.predict(imgs_test)
+df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
+print(df_confusion)
+```
+
 
 # Bayesian
 
@@ -256,11 +294,12 @@ $$ I_G (f) = \sum_{i=1}^{J} f_i (1-f_i) = 1 - \sum_{i=1}^{J} f_i^2 = \sum_{i \ne
 #### Information Gain
 Information gain compares the distribution of observations in the parent leaf to the distributions in the child leaves using the following formula:
 
-$$ IG(T,x) =  H(T) - H(T|x) \: \text{where} \: H(s) = - \sum_{i=1}^{J} p_i log_2 p_i \: \text{and} \: p_i = \text{percentage of class} \: i \: \text{in a leaf} $$
+$$ IG(T,x) =  H(T) - H(T|x) \text{ where } H(s) = - \sum_{i=1}^{J} p_i log_2 (p_i) \text{ and } p_i = \text{percentage of class } i \text{ in a leaf} $$
 
 This index ought to be maximized.
 
 Although these are seperate measures, they almost always produce the same results, so either or both could be tried in most cases.
+
 # Neural Networks
 
 # HMM
