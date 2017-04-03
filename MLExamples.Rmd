@@ -17,6 +17,7 @@ library(ggplot2)
 library(feather)
 library(plotly)
 
+
 load_mnist <- function() {
   load_image_file <- function(filename) {
     ret = list()
@@ -61,38 +62,49 @@ write_feather(trainset, "trainset.feather")
 write_feather(testset, "testset.feather")
 ```
 
+
 # Data
 
-For this example, we will use the [MNIST handwritten digits dataset](http://yann.lecun.com/exdb/mnist/) as it has already been prepared and offers an interesting, commonly used classification problem. Each digit is a 28x28 pixelated image, stored as a vector of 784 black/white values ranging from 0 to 255. This also allows us to more easily visualize each data point - having each column correspond to part of an image rather than to the readout of a sensor allows for a simpler understanding of the classes. Everyone has an idea of what _four_ looks like, even though there are many ways to write it. To save time and processing power, we will only use the digits 1,4, and 9. The first digit in the train set is labelled as a `r trainset$y[1]`, and looks like this:
+## NIMST dataset
+We use a subset of the [MNIST handwritten digits dataset](http://yann.lecun.com/exdb/mnist/) to demonstrate the concept of PCA. The NIMST dataset contains "pictures" of handwritten digits from 0 to 9. The "picture" for each of these numbers is stored in a 28 x 28 matrix containing a total of 784 pixels. Each "pixel" is a black/white value with a range of 0 to 255. When plotted in a heatmap style, the darker/light contrast reveals the picture of the number. The first element of our set (labelled as a `r trainset$y[1]`) looks like this:
 
 ```{r}
 show_digit(trainset[1, 1:784])
 ```
 
-# Dimensionality Reductions
+## Subset of NIMST dataset
+For this example we subset the original NIMST data to contain only pictures of digits 1, 4 and 9. A 29th column is a label for the number, but it is not used in the analysis. 
 
-These methods aren't quite classifiers, but they do simplify the dataset and make it easier to model properly. They may or may not be able to make predictions on their own - often they require some other algorithm, such as K-Nearest Neighbors, to go from a simplification to a conclusion. 
+# PCA
 
-## Principal Component Analysis
+* Principal Component Analysis is a method of multivariate (multidimensional) data analysis
+* It is used for data exploration and dimensionality reduction. Other applications can include clustering and variable selection.
+* Care should be taking when interpreting Principal Component Analysis. Diagnostics are available to understand the model output
+* Statistical inference is possible from PCA but it may require the use of other techniques, such as KNN to complement PCA and form a conclusion from the simplification of the data
+* Please do not call this method PrinciPLE Component Analysis. That is wrong
 
-
-### Theory
-Principal Component Analysis (PCA) is a transformation algorithm that attempts to find the Principal Components (PC) of a data set, such that the first principal component (PC1) accounts for as much of the data's variation as possible, and that each subsequent PC accounts for the largest possible amount of variance while being orthagonal to the previous PCs.
+# Basic Theory
+* PCA aims to capture the essence of the multivariate data
+* It provides a high level picture of the entire dataset in two or three "Principal Components" (PCs)
+* It relies on the covariance between all variables to extract the essence of the data. It uses matrix algebra to calculate eigenvalues and eigenvectors from covariance matrix
+* Eigenvectors contain one "weight" for each variable. A linear equation can be formed to using these weights and the value of the variable for each record to calculate an observation's PC1 value.
+* There is one Principal Component for each variable used. 
++ The first principal component (PC1) accounts for most of the data's variation as possible
++ Subsequent PCs accounts for the largest possible amount of variance while being orthagonal to the previous PCs
++ Not all PCs should be used to interpret the data
 
 ![](Images/PCA.png)
+
 
 Mathematically, PC1 is written as $w_{(1)}$ and solved for using this equation:
 
 \begin{equation}
-w_{(1)} = \text{arg max} \frac{w^T X^T X w}{w^T w} = \text{eigenvector}_{(1)} \text{of} X^T X
+w_{(1)} = \text{arg max } \frac{w^T X^T X w}{w^T w} = \text{ eigenvector}_{(1)} \text{ of } X^T X
 \end{equation}
 
-### Use Cases
-This method may be best used when trying to analyze multi-dimensional data, as it can greatly reduce the dimensionality and keep seperation between classes. It can also highlight which variables are most important, based on their weights in the PC's.
+### PCA Analysis using R
 
-### Examples
-
-#### R
+PCA Analysis is conducted and the Eigen Values and Eigen Vectors are generated. A "scree plot" shows the percent of the variance explained by each Principal Component (28 in total). It indicates how much you should trust any one component, based on how variance they explain. The later PCs usually tend to explain noise in the data so it is not as valuable to interpret them. Below is a picture of the scree plot. Within the scree plot the goal is to find the "elbow" which is usually a good indication that the PCs up to that point explain most of the variance in the data. In this case, three PCs seems to explain the data well, although they collectively only explain about 35% of the data. 
 
 ```{r, PCA r}
 #Data has been loaded above
@@ -103,9 +115,10 @@ This method may be best used when trying to analyze multi-dimensional data, as i
 unlabeled <- trainset[, 1:784]
 modpca <- prcomp(unlabeled)
 prop.pca <- modpca$sdev^2/sum(modpca$sdev^2)
+plot(prop.pca[1:28])
 ```
 
-#### Python
+### Python
 
 ```{python, PCA python}
 import feather, os
@@ -137,9 +150,10 @@ sns.lmplot('PC1', 'PC2', data=X, hue='class', fit_reg=False).savefig(plotpath)
 ```
 
 
-### Results
 
-These four plots show the first four principal components - as noted in the plot above, they only account for `r prop.pca[1:3]`, and `r prop.pca[4]` percent of the variation in the data. Thus they aren't easily recognizable as numbers, but appear to be groups of curves that make up the digits. 
+## Results
+
+Each PC explains some essence in the data. As seen from the eigenvectors above and the plots below show what is captured by the principal components (only PC1 through PC4 below). Each captures a different "story" and they only account for `r prop.pca[1:3]`, and `r prop.pca[4]` percent of the variation in the data. Althought they are not precisely recognizable as numbers there appear to be groups of curves that make up the digits. PC1 seems to show data that looks like a (nine), while PC2 is a little more unclear in that it shows data that could be a 9, a 4 or a 1. PC3 shows data that could be a 9. 
 
 ```{r, PCs}
 #plot eigenvectors
@@ -151,7 +165,7 @@ show_digit(modpca$rotation[,4],axes=FALSE)
 par(mfrow=c(1,1))
 ```
 
-Since each observation is made up of a combination of these Principle Components, we would expect the zeros to have high PC1 values, which we see is true by this plot below, with PC1 on the x-axis and PC2 on the y-axis. However, most of the classes are hard to seperate.
+Since each observation is made up of a combination of these Principle Components, we would expect the zeros to have high PC1 values, which we see is true by this plot below, with PC1 on the x-axis and PC2 on the y-axis. However, most of the classes are hard to separate.
 
 ```{r, PCA plot}
 #ggplot2::ggplot(data=as.data.frame(modpca$x[,1:2]), ggplot2::aes(x=PC1, y=PC2, color=trainset$y)) +
