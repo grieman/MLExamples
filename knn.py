@@ -1,11 +1,15 @@
-import feather
+import feather, os
 import pandas as pd
 from sklearn.neighbors import KNeighborsClassifier
 
-train = feather.read_dataframe("C:\\Users\\riemang\\Documents\\MachineLearningPres\\Untitled\\trainset.feather")
+path = os.getcwd()
+trainpath = os.path.join(path, "trainset.feather")
+testpath = os.path.join(path, "testset.feather")
+
+train = feather.read_dataframe(trainpath)
 lbls = train['y']
 imgs = train.drop('y', 1)
-test = feather.read_dataframe("C:\\Users\\riemang\\Documents\\MachineLearningPres\\Untitled\\testset.feather")
+test = feather.read_dataframe(testpath)
 lbls_test = test['y']
 imgs_test = test.drop('y', 1)
 
