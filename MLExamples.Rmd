@@ -51,14 +51,14 @@ show_digit <- function(arr784, col=gray(12:1/12), ...) {
 
 load_mnist()
 
-trainset <- as.data.frame(train$x);trainset$y <- train$y
-testset <- as.data.frame(test$x);testset$y <- test$y
+trainset <- as.data.frame(train$x);trainset$y <- as.factor(train$y)
+testset <- as.data.frame(test$x);testset$y <- as.factor(test$y)
 
-trainset %<>% subset(y %in% c("0","8","2","7"))
-testset %<>% subset(y %in% c("0","8","2","7"))
+trainset %<>% subset(y %in% c("1","4","9")) %>% droplevels
+testset %<>% subset(y %in% c("1","4","9")) %>% droplevels
 
 write_feather(trainset, "trainset.feather")
-write_feather(trainset, "testset.feather")
+write_feather(testset, "testset.feather")
 ```
 
 # Data
@@ -173,14 +173,87 @@ Similarly, this is the plot that the above python code generated:
 ### Examples
 
 
-# SVM
+# Support Vector Machines
+
+### Theory
+
+A support vector machine it a binary classifier that attempts to maximize the seperation between groups. It fits a hyperplane between the two classes, creating and maximizing a gap between them. This hyperplane is a linear seperator, but can be made nonlinear via kernels and modifying dimensionality. 
+
+![](Images/SVM-illustration.jpg)
+
+In its simplest form, the process is as follows:
+
+
+Let $H_1$ and $H_2$ be the closest points in different classes, $y$ be either 1 or -1 depending on the class of the point, and the hyperplane be defined as $w*x + b = 0$ so that points on different sides of the plane will have either 1 or -1. 
+
+Then $d(H_1,H_2) = \frac{2*(w*x + b)}{w} = \frac{2}{w}$, and the goal is to minimize $w$ to maximize seperation. 
+
+From the definitions above, we know that $w*x + b \geq 1$ when $y_1 = 1$ and that $w*x + b \leq -1$ when $y_1 = -1$, which can be simplified to $y_1 (w*x) \geq 1$. 
+
+This can be solved with a [Lagrangian multiplier](https://en.wikipedia.org/wiki/Lagrange_multiplier) and has only one global maximum, which is the desired hyperplane.
+
+
+### Use Cases
+
+SVM is able to capture complex hyperplane boundries using non-linear kernels, but can be computationally intensive. It is most useful where boundries between classes are complex or not quite visible, as the hyperplanes can be calcualted to find the best boundaries, and ought to be more robust than linear methods when extrapolating to new data.
+
+### Examples
+
+```{r}
+library('e1071')
+model <- svm(y~., trainset, scale=F, kernel = "polynomial")
+res <- predict(model, newdata=testset)
+
+RRhelpr::printClassificationTable(testset$y,res,"SVM")
+```
+
+```{python}
+import feather
+import pandas as pd
+from sklearn import svm
+
+#data intake and prep
+train = feather.read_dataframe("C:\\Users\\riemang\\Documents\\MachineLearningPres\\Untitled\\trainset.feather")
+lbls = train['y']
+imgs = train.drop('y', 1)
+test = feather.read_dataframe("C:\\Users\\riemang\\Documents\\MachineLearningPres\\Untitled\\testset.feather")
+lbls_test = test['y']
+imgs_test = test.drop('y', 1)
+
+#initialize and train model
+svm = svm.SVC(kernel='poly')
+svm.fit(imgs, lbls)
+svm.score(imgs, lbls)
+
+#predict
+predictions = svm.predict(imgs_test)
+df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
+print(df_confusion)
+```
 
 # KNN
 
 # Bayesian
 
-# Trees
+# Decision Trees
 
+### Theory
+
+Typically, a decision tree algorithm seeks to split the data as best as possible at each step (leaf), maximizing the difference between the two resulting leaves until no more useful splits can be found. For classification trees, these best splits are usually calculated by one of two indeces: Gini Impurity or Information Gain.
+
+#### Gini Impurity 
+Gini Impurity measures the innaccuracy of a split for a given class $i$, and ought to be minimized:
+Supposing we have $J$ classes, $i \in {1,2,3,...,J}$ and $g_i$ is the fraction of observations that are labeled with class $i$.
+$ I_G (f) = \sum_{i=1}^{J} f_i (1-f_i) = 1 - \sum_{i=1}^{J} f_i^2 = \sum_{i \neq k} f_i f_k $
+
+#### Information Gain
+Information gain compares the distribution of observations in the parent leaf to the distributions in the child leaves using the following formula:
+
+$ IG(T,x) =  H(T) - H(T,x) \text{where} H(s) = - \sum_{i=1}^{J} p_i log_2 p_i \text{where} p_i = percentage of class i in a node $
+
+This index ought to be maximized.
+
+Although these are seperate measures, they almost always produce the same results, so either or both could be tried in most cases.
 # Neural Networks
 
 # HMM
