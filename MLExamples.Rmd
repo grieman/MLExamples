@@ -52,17 +52,30 @@ show_digit <- function(arr784, col=gray(12:1/12), ...) {
 
 load_mnist()
 
-trainset <- as.data.frame(train$x);trainset$y <- train$y
-testset <- as.data.frame(test$x);testset$y <- test$y
+trainset <- as.data.frame(train$x);trainset$y <- as.factor(train$y)
+testset <- as.data.frame(test$x);testset$y <- as.factor(test$y)
 
-trainset %<>% subset(y %in% c("0","8","2","7"))
-testset %<>% subset(y %in% c("0","8","2","7"))
+trainset %<>% subset(y %in% c("1","4","9")) %>% droplevels
+testset %<>% subset(y %in% c("1","4","9")) %>% droplevels
 
 write_feather(trainset, "trainset.feather")
-write_feather(trainset, "testset.feather")
+write_feather(testset, "testset.feather")
 ```
 
-# Background
+
+# Data
+
+## NIMST dataset
+We use a subset of the [MNIST handwritten digits dataset](http://yann.lecun.com/exdb/mnist/) to demonstrate the concept of PCA. The NIMST dataset contains "pictures" of handwritten digits from 0 to 9. The "picture" for each of these numbers is stored in a 28 x 28 matrix containing a total of 784 pixels. Each "pixel" is a black/white value with a range of 0 to 255. When plotted in a heatmap style, the darker/light contrast reveals the picture of the number. The first element of our set (labelled as a `r trainset$y[1]`) looks like this:
+
+```{r}
+show_digit(trainset[1, 1:784])
+```
+
+## Subset of NIMST dataset
+For this example we subset the original NIMST data to contain only pictures of digits 1, 4 and 9. A 29th column is a label for the number, but it is not used in the analysis. 
+
+# PCA
 
 * Principal Component Analysis is a method of multivariate (multidimensional) data analysis
 * It is used for data exploration and dimensionality reduction. Other applications can include clustering and variable selection.
@@ -83,30 +96,15 @@ write_feather(trainset, "testset.feather")
 ![](Images/PCA.png)
 
 
-
 Mathematically, PC1 is written as $w_{(1)}$ and solved for using this equation:
 
 \begin{equation}
-w_{(1)} = \text{arg max} \frac{w^T X^T X w}{w^T w} = \text{eigenvector}_{(1)} \text{of} X^T X
+w_{(1)} = \text{arg max } \frac{w^T X^T X w}{w^T w} = \text{ eigenvector}_{(1)} \text{ of } X^T X
 \end{equation}
 
-# Sample application of PCA
+### PCA Analysis using R
 
-## Data
-
-### NIMST dataset
-We use a subset of the [MNIST handwritten digits dataset](http://yann.lecun.com/exdb/mnist/) to demonstrate the concept of PCA. The NIMST dataset contains "pictures" of handwritten digits from 0 to 9. The "picture" for each of these numbers is stored in a 28 x 28 matrix containing a total of 784 pixels. Each "pixel" is a black/white value with a range of 0 to 255. When plotted in a heatmap style, the darker/light contrast reveals the picture of the number. The zero from the NIMST dataset (labelled as a `r trainset$y[1]`) looks like this:
-
-```{r}
-show_digit(trainset[1, 1:784])
-```
-
-### Subset of NIMST dataset
-For this example we subset the original NIMST data to contain only pictures of digits 1, 4 and 9. The 28x28 matrices for each of these digits is concatenated vertically, resulting in a 84x28 matrix. A 29th column is a label for the number, but it is not used in the analysis. 
-
-#### PCA Analysis using R
-
-PCA Analysis is conducted and the Eigen Values and Eigen Vectors are generated. (Still need to include them below). A "scree plot" shows the percent of the variance explained by each Principal Component (28 in total). It indicates how much you should trust any one component, based on how variance they explain. The higher order PCs usually tend to explain noise in the data so it is not as valuable to interpret them. Below is a picture of the scree plot. Within the scree plot the goal is to find the "elbow" which is usually a good indication that the PCs up to that point explain most of the variance in the data. In this case, three PCs seems to explain the data well, although they collectively only explain about 30% of the data. 
+PCA Analysis is conducted and the Eigen Values and Eigen Vectors are generated. A "scree plot" shows the percent of the variance explained by each Principal Component (28 in total). It indicates how much you should trust any one component, based on how variance they explain. The later PCs usually tend to explain noise in the data so it is not as valuable to interpret them. Below is a picture of the scree plot. Within the scree plot the goal is to find the "elbow" which is usually a good indication that the PCs up to that point explain most of the variance in the data. In this case, three PCs seems to explain the data well, although they collectively only explain about 35% of the data. 
 
 ```{r, PCA r}
 #Data has been loaded above
@@ -120,35 +118,40 @@ prop.pca <- modpca$sdev^2/sum(modpca$sdev^2)
 plot(prop.pca[1:28])
 ```
 
-<!-- #### Python -->
+### Python
 
-<!-- ```{python, PCA python} -->
-<!-- import feather -->
-<!-- import pandas as pd -->
-<!-- from sklearn.decomposition import RandomizedPCA -->
-<!-- import seaborn as sns -->
+```{python, PCA python}
+import feather, os
+import pandas as pd
+from sklearn.decomposition import RandomizedPCA
+import seaborn as sns
 
-<!-- #load the data that was loaded then saved in R -->
-<!-- train = feather.read_dataframe("E:\\MLExamples\\trainset.feather") -->
-<!-- lbls = train['y'] -->
-<!-- imgs = train.drop('y', 1) -->
+path = os.getcwd()
+trainpath = os.path.join(path, "trainset.feather")
+plotpath = os.path.join(path, "Images\python_PCA.png")
 
-<!-- # train model -->
-<!-- pca = RandomizedPCA(n_components=2)  -->
-<!-- X = pca.fit_transform(imgs) -->
+#load the data that was loaded then saved in R
+train = feather.read_dataframe(trainpath)
+lbls = train['y']
+imgs = train.drop('y', 1)
 
-<!-- # form DataFrame and rename columns -->
-<!-- X = pd.DataFrame(X) -->
-<!-- X.columns = ['PC1', 'PC2'] -->
-<!-- X['class'] = lbls -->
+# train model
+pca = RandomizedPCA(n_components=2) 
+X = pca.fit_transform(imgs)
 
-<!-- # make and save plot -->
-<!-- sns.set_palette(sns.color_palette("Set3", 10)) -->
-<!-- sns.lmplot('PC1', 'PC2', data=X, hue='class', fit_reg=False).savefig('E:\\MLExamples\\python_PCA.png') -->
-<!-- ``` -->
+# form DataFrame and rename columns
+X = pd.DataFrame(X)
+X.columns = ['PC1', 'PC2']
+X['class'] = lbls
+
+# make and save plot
+sns.set_palette(sns.color_palette("Set3", 10))
+sns.lmplot('PC1', 'PC2', data=X, hue='class', fit_reg=False).savefig(plotpath)
+```
 
 
-### Results
+
+## Results
 
 Each PC explains some essence in the data. As seen from the eigenvectors above and the plots below show what is captured by the principal components (only PC1 through PC4 below). Each captures a different "story" and they only account for `r prop.pca[1:3]`, and `r prop.pca[4]` percent of the variation in the data. Althought they are not precisely recognizable as numbers there appear to be groups of curves that make up the digits. PC1 seems to show data that looks like a (nine), while PC2 is a little more unclear in that it shows data that could be a 9, a 4 or a 1. PC3 shows data that could be a 9. 
 
@@ -165,7 +168,7 @@ par(mfrow=c(1,1))
 Since each observation is made up of a combination of these Principle Components, we would expect the zeros to have high PC1 values, which we see is true by this plot below, with PC1 on the x-axis and PC2 on the y-axis. However, most of the classes are hard to separate.
 
 ```{r, PCA plot}
-#ggplot2::ggplot(data=as.data.frame(modpca$x[,1:2]), ggplot2::aes(x=PC1, y=PC2, color=as.factor(trainset$y))) +
+#ggplot2::ggplot(data=as.data.frame(modpca$x[,1:2]), ggplot2::aes(x=PC1, y=PC2, color=trainset$y)) +
 #        ggplot2::geom_point(size=2) + RRhelpr::theme_RR() + scale_color_brewer(type="qual", palette="Set3") +
 #        ggplot2::labs(x = paste("PC1 (", scales::percent(prop.pca[1]), " explained var.)", sep=""),
 #                      y = paste("PC2 (", scales::percent(prop.pca[2]), " explained var.)", sep=""))
@@ -187,13 +190,129 @@ Similarly, this is the plot that the above python code generated:
 ### Examples
 
 
-# SVM
+# Support Vector Machines
 
-# KNN
+### Theory
+
+A support vector machine it a binary classifier that attempts to maximize the seperation between groups. It fits a hyperplane between the two classes, creating and maximizing a gap between them. This hyperplane is a linear seperator, but can be made nonlinear via kernels and modifying dimensionality. 
+
+![](Images/SVM-illustration.jpg)
+
+In its simplest form, the process is as follows:
+
+
+Let $H_1$ and $H_2$ be the closest points in different classes, $y$ be either 1 or -1 depending on the class of the point, and the hyperplane be defined as $w*x + b = 0$ so that points on different sides of the plane will have either 1 or -1. 
+
+Then $d(H_1,H_2) = \frac{2*(w*x + b)}{w} = \frac{2}{w}$, and the goal is to minimize $w$ to maximize seperation. 
+
+From the definitions above, we know that $w*x + b \geq 1$ when $y_1 = 1$ and that $w*x + b \leq -1$ when $y_1 = -1$, which can be simplified to $y_1 (w*x) \geq 1$. 
+
+This can be solved with a [Lagrangian multiplier](https://en.wikipedia.org/wiki/Lagrange_multiplier) and has only one global maximum, which is the desired hyperplane.
+
+
+### Use Cases
+
+SVM is able to capture complex hyperplane boundries using non-linear kernels, but can be computationally intensive. It is most useful where boundries between classes are complex or not quite visible, as the hyperplanes can be calcualted to find the best boundaries, and ought to be more robust than linear methods when extrapolating to new data.
+
+### Examples
+
+```{r}
+library('e1071')
+model <- svm(y~., trainset, scale=F, kernel = "polynomial")
+res <- predict(model, newdata=testset)
+
+RRhelpr::printClassificationTable(testset$y,res,"SVM")
+```
+
+```{python}
+import feather, os
+import pandas as pd
+from sklearn import svm
+
+path = os.getcwd()
+trainpath = os.path.join(path, "trainset.feather")
+testpath = os.path.join(path, "testset.feather")
+
+#data intake and prep
+train = feather.read_dataframe(trainpath)
+lbls = train['y']
+imgs = train.drop('y', 1)
+test = feather.read_dataframe(testpath)
+lbls_test = test['y']
+imgs_test = test.drop('y', 1)
+
+#initialize and train model
+svm = svm.SVC(kernel='poly')
+svm.fit(imgs, lbls)
+svm.score(imgs, lbls)
+
+#predict
+predictions = svm.predict(imgs_test)
+df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
+print(df_confusion)
+```
+
+# K-Nearest Neighbors
+
+### Theory
+K-Nearest Neighbors uses a majority vote of the closes $k$ points to classify any given point. The distance metric and value of $k$ can be modified, but a relatively small, odd $k$ value produces acceptable results without requiring too much processing power. 
+### Use Cases
+### Examples
+
+```{r}
+modknn <- class::knn(trainset[-c(785)], testset[-c(785)], trainset$y,k=3)
+pred <- as.numeric(levels(modknn))[modknn]
+RRhelpr::printClassificationTable(testset$y,modknn,"KNN")
+```
+
+```{python}
+import feather, os
+import pandas as pd
+from sklearn.neighbors import KNeighborsClassifier
+
+path = os.getcwd()
+trainpath = os.path.join(path, "trainset.feather")
+testpath = os.path.join(path, "testset.feather")
+
+train = feather.read_dataframe(trainpath)
+lbls = train['y']
+imgs = train.drop('y', 1)
+test = feather.read_dataframe(testpath)
+lbls_test = test['y']
+imgs_test = test.drop('y', 1)
+
+# Fit the model on the training data.
+knn = KNeighborsClassifier(n_neighbors=5)
+knn.fit(imgs, lbls)
+
+# Make point predictions on the test set using the fit model.
+predictions = knn.predict(imgs_test)
+df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
+print(df_confusion)
+```
+
 
 # Bayesian
 
-# Trees
+# Decision Trees
+
+### Theory
+
+Typically, a decision tree algorithm seeks to split the data as best as possible at each step (leaf), maximizing the difference between the two resulting leaves until no more useful splits can be found. For classification trees, these best splits are usually calculated by one of two indeces: Gini Impurity or Information Gain.
+
+#### Gini Impurity 
+Gini Impurity measures the innaccuracy of a split for a given class $i$, and ought to be minimized:
+Supposing we have $J$ classes, $i \in {1,2,3,...,J}$ and $g_i$ is the fraction of observations that are labeled with class $i$.
+$$ I_G (f) = \sum_{i=1}^{J} f_i (1-f_i) = 1 - \sum_{i=1}^{J} f_i^2 = \sum_{i \neq k} f_i f_k $$
+
+#### Information Gain
+Information gain compares the distribution of observations in the parent leaf to the distributions in the child leaves using the following formula:
+
+$$ IG(T,x) =  H(T) - H(T|x) \text{ where } H(s) = - \sum_{i=1}^{J} p_i log_2 (p_i) \text{ and } p_i = \text{percentage of class } i \text{ in a leaf} $$
+
+This index ought to be maximized.
+
+Although these are seperate measures, they almost always produce the same results, so either or both could be tried in most cases.
 
 # Neural Networks
 
