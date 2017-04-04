@@ -83,7 +83,7 @@ For this example we subset the original NIMST data to contain only pictures of d
 * Statistical inference is possible from PCA but it may require the use of other techniques, such as KNN to complement PCA and form a conclusion from the simplification of the data
 * Please do not call this method PrinciPLE Component Analysis. That is wrong
 
-# Basic Theory
+## Basic Theory
 * PCA aims to capture the essence of the multivariate data
 * It provides a high level picture of the entire dataset in two or three "Principal Components" (PCs)
 * It relies on the covariance between all variables to extract the essence of the data. It uses matrix algebra to calculate eigenvalues and eigenvectors from covariance matrix
@@ -255,8 +255,14 @@ print(df_confusion)
 # K-Nearest Neighbors
 
 ### Theory
-K-Nearest Neighbors uses a majority vote of the closes $k$ points to classify any given point. The distance metric and value of $k$ can be modified, but a relatively small, odd $k$ value produces acceptable results without requiring too much processing power. 
+* K-Nearest Neighbors uses a majority vote of the closest $k$ points to classify any given point. 
+* The distance metric and value of $k$ can be modified, but a relatively small $k$ value (often $k = \sqrt{n}$ to balance speed and noise in complex sets) produces acceptable results without requiring too much processing power. 
+* The only assumption that this algorithm makes is that the points are in a metric space, which most datasets ought to satisfy without any modification. 
+* A one-nearest neighbor algorithm will have a maximum error rate of wo times the dataset's Bayes error rate, the irreducible error of a set.
+
 ### Use Cases
+KNN is often used because it is easy to explain, and it is most often used when the concept of neighbors translates well to similarity. As data sets become more abstract and complex, KNN is still a viable option, but may not be as useful as other algorithms since it has no model, just a distance matrix and observations.
+
 ### Examples
 
 ```{r}
@@ -291,6 +297,14 @@ df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
 print(df_confusion)
 ```
 
+#### KNN on PCA
+As discussed above, KNN can be used on the reduced-dimension set output by PCA. This ought to reduce the running time, as there are fewer columns to consider, and increase the accuracy, since these columns correspond to the principle components.
+
+```{r}
+test_pca <- predict(modpca, testset)
+prediction_pca <- class::knn(modpca$x[,1:28], test_pca[,1:28], trainset$y, k=3)
+RRhelpr::printClassificationTable(testset$y,prediction_pca,"KNN fitted on the above PCA transformation")
+```
 
 # Bayesian
 
@@ -313,6 +327,13 @@ $$ IG(T,x) =  H(T) - H(T|x) \text{ where } H(s) = - \sum_{i=1}^{J} p_i log_2 (p_
 This index ought to be maximized.
 
 Although these are seperate measures, they almost always produce the same results, so either or both could be tried in most cases.
+
+### Examples
+
+```{r}
+
+```
+
 
 # Neural Networks
 
