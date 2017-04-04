@@ -1,2 +1,5 @@
 *.html
 *.feather
+.Rproj.user
+*.RData
+*.Rproj
