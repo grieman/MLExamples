@@ -255,7 +255,10 @@ print(df_confusion)
 # K-Nearest Neighbors
 
 ### Theory
-K-Nearest Neighbors uses a majority vote of the closest $k$ points to classify any given point. The distance metric and value of $k$ can be modified, but a relatively small $k$ value (often $k = \sqrt{n}$ to balance speed and noise in complex sets) produces acceptable results without requiring too much processing power. The only assumption that this algorithm makes is that the points are in a metric space, which most datasets ought to satisfy without any modification. Interestingly, a one-nearest neighbor algorithm will have a maximum error rate of wo times the dataset's Bayes error rate, the irreducible error of a set.
+* K-Nearest Neighbors uses a majority vote of the closest $k$ points to classify any given point. 
+* The distance metric and value of $k$ can be modified, but a relatively small $k$ value (often $k = \sqrt{n}$ to balance speed and noise in complex sets) produces acceptable results without requiring too much processing power. 
+* The only assumption that this algorithm makes is that the points are in a metric space, which most datasets ought to satisfy without any modification. 
+* A one-nearest neighbor algorithm will have a maximum error rate of wo times the dataset's Bayes error rate, the irreducible error of a set.
 
 ### Use Cases
 KNN is often used because it is easy to explain, and it is most often used when the concept of neighbors translates well to similarity. As data sets become more abstract and complex, KNN is still a viable option, but may not be as useful as other algorithms since it has no model, just a distance matrix and observations.
@@ -263,7 +266,7 @@ KNN is often used because it is easy to explain, and it is most often used when 
 ### Examples
 
 ```{r}
-modknn <- class::knn(trainset[-c(785)], testset[-c(785)], trainset$y,k=3) #this is always euclidean
+modknn <- class::knn(trainset[-c(785)], testset[-c(785)], trainset$y,k=3)
 pred <- as.numeric(levels(modknn))[modknn]
 RRhelpr::printClassificationTable(testset$y,modknn,"KNN")
 ```
@@ -295,12 +298,12 @@ print(df_confusion)
 ```
 
 #### KNN on PCA
-As discussed above, KNN can be used on the reduced-dimension set output by PCA. An example is done here.
+As discussed above, KNN can be used on the reduced-dimension set output by PCA. This ought to reduce the running time, as there are fewer columns to consider, and increase the accuracy, since these columns correspond to the principle components.
 
 ```{r}
 test_pca <- predict(modpca, testset)
-prediction_pca <- class::knn(modpca$x[,1:25], test_pca[,1:25], trainset$y, k=3)
-RRhelpr::printClassificationTable(testset$y,prediction_pca,"KNN on PCA data")
+prediction_pca <- class::knn(modpca$x[,1:28], test_pca[,1:28], trainset$y, k=3)
+RRhelpr::printClassificationTable(testset$y,prediction_pca,"KNN fitted on the above PCA transformation")
 ```
 
 # Bayesian
