@@ -73,7 +73,7 @@ show_digit(trainset[1, 1:784])
 ```
 
 ## Subset of NIMST dataset
-For this example we subset the original NIMST data to contain only pictures of digits 1, 4 and 9. A 29th column is a label for the number, but it is not used in the analysis. 
+For this example we subset the original NIMST data to contain only pictures of digits 1, 4 and 9. The last column is a label for the number, but it is not used in the analysis. 
 
 # PCA
 
@@ -309,8 +309,6 @@ prediction_pca <- class::knn(modpca$x[,1:28], test_pca[,1:28], trainset$y, k=3)
 RRhelpr::printClassificationTable(testset$y,prediction_pca,"KNN fitted on the above PCA transformation")
 ```
 
-# Bayesian
-
 # Decision Trees
 
 ## Theory
@@ -328,6 +326,9 @@ Information gain ought to be optimized - it compares the distribution of observa
 $$ IG(T,x) =  H(T) - H(T|x) \text{ where } H(s) = - \sum_{i=1}^{J} p_i log_2 (p_i) \text{ and } p_i = \text{percentage of class } i \text{ in a leaf} $$
 
 Although these are seperate measures, they almost always produce the same results, so either or both could be tried in most cases.
+
+## Use Cases
+Some of the greatest strengths of decision trees are simplicity and ease of use. They can handle large datasets with little preparation, and each leaf can be described with a list of inequalities, making the model clear and easily interpretable. However, they can be less accurate and less robust than other methods - prone to error and overfitting.
 
 ## Examples
 
@@ -379,7 +380,60 @@ print(df_confusion)
 
 # Neural Networks
 
+## Theory
+Artificial neural networks are patterned after biological neural networks, with nodes and connections taking the place of neurons and axons. Input nodes are connected to hidden nodes with calculated weights, and these hidden nodes are connected in the same way to another layer of hidden nodes or to the output nodes. These weights are calculated via [backpropogation](https://en.wikipedia.org/wiki/Backpropagation), usually with a steepest descent or other gradient method. [Simulated Annealing](https://en.wikipedia.org/wiki/Simulated_annealing) and [Genetic Models](https://en.wikipedia.org/wiki/Evolutionary_algorithm) are commonly used alternatives.
+
+The theory of neural networks quickly becomes quite complicated, dealing with much more information than one needs to use them effectively. An exellent demo can be found [here](playground.tensorflow.org) - it enables one to see how changing weights and nodes impacts the model and is more easily understood than the paragraphs that would otherwise be needed.
+
+## Use Cases
+Neural networks may be most useful with complex data which do not have an obvious mathematical solution. They can be used for both classification and model approximation in a numerical application, and have been adapted for robotics, pattern recognition, decision making, and much more. This flexibility is a great strength, but comes at the cost of intensive procesing. Software like Tensorflow and H2O has been developed to spread these calculations across CPUs and GPUs to enable faster speeds and easier distributed processing. 
+
+## Examples
+
+#### R
+
+```{r}
+n <- names(trainset[-c(785)])
+formula <- stats::as.formula(paste(c("y", paste(n, collapse = " + ")),collapse = " ~ "))
+
+modnnet <- nnet::nnet(formula, data=trainset,decay=.05, maxit=100, size=10, trace = FALSE, MaxNWts = 8000)
+preds <- predict(modnnet, testset[-c(785)], type= "class")
+
+RRhelpr::printClassificationTable(testset$y,preds,"ANN")
+```
+
+
+#### Python
+```{python}
+import feather, os
+import pandas as pd
+from sklearn.neural_network import MLPClassifier #requires 0.18
+
+path = os.getcwd()
+trainpath = os.path.join(path, "trainset.feather")
+testpath = os.path.join(path, "testset.feather")
+
+train = feather.read_dataframe(trainpath)
+lbls = train['y']
+imgs = train.drop('y', 1)
+test = feather.read_dataframe(testpath)
+lbls_test = test['y']
+imgs_test = test.drop('y', 1)
+
+#initialize and train model
+mlp = MLPClassifier(hidden_layer_sizes=(10))
+mlp.fit(imgs, lbls)
+
+#predict
+predictions = mlp.predict(imgs_test)
+df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
+print(df_confusion)
+```
+
+
 # HMM
+
+# Bayesian
 
 # Ensemble Techniques
 
