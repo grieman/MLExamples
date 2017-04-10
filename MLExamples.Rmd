@@ -192,7 +192,7 @@ Similarly, this is the plot that the above python code generated:
 
 # Support Vector Machines
 
-### Theory
+## Theory
 
 A support vector machine it a binary classifier that attempts to maximize the seperation between groups. It fits a hyperplane between the two classes, creating and maximizing a gap between them. This hyperplane is a linear seperator, but can be made nonlinear via kernels and modifying dimensionality. 
 
@@ -210,11 +210,11 @@ From the definitions above, we know that $w*x + b \geq 1$ when $y_1 = 1$ and tha
 This can be solved with a [Lagrangian multiplier](https://en.wikipedia.org/wiki/Lagrange_multiplier) and has only one global maximum, which is the desired hyperplane.
 
 
-### Use Cases
+## Use Cases
 
 SVM is able to capture complex hyperplane boundries using non-linear kernels, but can be computationally intensive. It is most useful where boundries between classes are complex or not quite visible, as the hyperplanes can be calcualted to find the best boundaries, and ought to be more robust than linear methods when extrapolating to new data.
 
-### Examples
+## Examples
 
 ```{r}
 library('e1071')
@@ -265,14 +265,14 @@ KNN is often used because it is easy to explain, and it is most often used when 
 
 ## Examples
 
-### R
+#### R
 ```{r, KNN}
 modknn <- class::knn(trainset[-c(785)], testset[-c(785)], trainset$y,k=3)
 pred <- as.numeric(levels(modknn))[modknn]
 RRhelpr::printClassificationTable(testset$y,modknn,"KNN")
 ```
 
-### Python
+#### Python
 
 ```{python}
 import feather, os
@@ -332,7 +332,7 @@ Some of the greatest strengths of decision trees are simplicity and ease of use.
 
 ## Examples
 
-### R 
+#### R 
 ```{r, tree}
 modtree <- rpart::rpart(y ~., data = trainset, control = rpart::rpart.control(cp=.0005)) #cp = minimum gain in fit at each split
 preds <- predict(modtree, testset,type="class")
@@ -348,7 +348,7 @@ The r script produces this tree:
 
 ![](Images/rpart.png)
 
-### Python
+#### Python
 
 ```{python}
 import feather, os
@@ -431,7 +431,7 @@ print(df_confusion)
 ```
 
 
-# HMM
+# Hidden Markov Models
 
 # Bayesian
 
