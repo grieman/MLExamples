@@ -434,8 +434,28 @@ print(df_confusion)
 # Naive Bayes
 
 ## Theory
+Naive Bayes is based upon Bayes theorem regarding conditional probabilitites - $P(c|x) = \frac{P(x|c)P(c)}{P(x)}$. It finds features that independently contribute to an observation being in a single class, ignoring any correlations between these features. The impact of each of these features are calculated using Bayes theorem, and then the influences are all added together. Naive Bayes may have some issues with similar classes - think 4 and 9 in our example - but should do well with more distinct classes. 
+
 ## Use Cases
+* Small data sets
+* Uncorrelated 
+* Lots of categorical data - assumes normality for numeric data
+* Text Analyses
+* Reccomenders
+
 ## Examples
+
+#### Equation for our Data
+
+$$
+\begin{align}
+P(x_1=4) &= P(x_1=4|(1,1)=\alpha) + P(x_1=4|(1,2) = \beta) + P(x_1=4|(1,3)=\gamma)+ ... + P(x_1=4|(28,28)=\omega) && \alpha, \beta, \gamma, ...\omega \in (0, 255) 
+\\       &= \frac{P((1,1)=\alpha|x=4)P(x=4)}{P((1,1)=\alpha)} + ... + \frac{P((28,28)=\omega|x=4)P(x=4)}{P((28,28)=\omega)}  && \text{Using Bayes Theorem}
+\\       &= \frac{P((1,1)=\alpha|x=4) \times .458}{P((1,1)=\alpha)} + ... + \frac{P((28,28)=\omega|x=4) \times .458}{P((28,28)=\omega)}  && \text{P(x=4) =} \frac{982}{2144}
+\\ & \text{With the calculations left to the model, this simplifies to 1.}
+\end{align}
+$$
+
 #### R
 
 ```{r}

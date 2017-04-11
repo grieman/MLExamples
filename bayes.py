@@ -18,6 +18,6 @@ clf = MultinomialNB()
 clf.fit(imgs, lbls)
 
 #predict
-predictions = mlp.predict(imgs_test)
+predictions = clf.predict(imgs_test)
 df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
 print(df_confusion)
