@@ -5,6 +5,7 @@ date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
   html_document:
     toc: true
+    toc_depth: 2
     toc_float:
       collapsed: false
       smooth_scroll: true
@@ -183,14 +184,12 @@ Similarly, this is the plot that the above python code generated:
 
 
 
-## LDA
-
-### Theory
-### Use Cases
-### Examples
 
 
-# Support Vector Machines
+# Supervised Learning 
+Supervised learning takes pre-defined classes and fits the data to them. Often, these are classification problems with a classified training set, and attempt to classify another data set into the same groups. 
+
+## Support Vector Machines
 
 ### Theory
 
@@ -252,27 +251,27 @@ df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
 print(df_confusion)
 ```
 
-# K-Nearest Neighbors
+## K-Nearest Neighbors
 
-## Theory
+### Theory
 * K-Nearest Neighbors uses a majority vote of the closest $k$ points to classify any given point. 
 * The distance metric and value of $k$ can be modified, but a relatively small $k$ value (often $k = \sqrt{n}$ to balance speed and noise in complex sets) produces acceptable results without requiring too much processing power. 
 * The only assumption that this algorithm makes is that the points are in a metric space, which most datasets ought to satisfy without any modification. 
 * A one-nearest neighbor algorithm will have a maximum error rate of wo times the dataset's Bayes error rate, the irreducible error of a set.
 
-## Use Cases
+### Use Cases
 KNN is often used because it is easy to explain, and it is most often used when the concept of neighbors translates well to similarity. As data sets become more abstract and complex, KNN is still a viable option, but may not be as useful as other algorithms since it has no model, just a distance matrix and observations.
 
-## Examples
+### Examples
 
-### R
+#### R
 ```{r, KNN}
 modknn <- class::knn(trainset[-c(785)], testset[-c(785)], trainset$y,k=3)
 pred <- as.numeric(levels(modknn))[modknn]
 RRhelpr::printClassificationTable(testset$y,modknn,"KNN")
 ```
 
-### Python
+#### Python
 
 ```{python}
 import feather, os
@@ -309,9 +308,9 @@ prediction_pca <- class::knn(modpca$x[,1:28], test_pca[,1:28], trainset$y, k=3)
 RRhelpr::printClassificationTable(testset$y,prediction_pca,"KNN fitted on the above PCA transformation")
 ```
 
-# Decision Trees
+## Decision Trees
 
-## Theory
+### Theory
 
 Typically, a decision tree algorithm seeks to split the data as best as possible at each step (leaf), maximizing the difference between the two resulting leaves until no more 'useful' splits can be found. For classification trees, these best splits are usually calculated by one of two indeces: Gini Impurity or Information Gain.
 
@@ -327,12 +326,12 @@ $$ IG(T,x) =  H(T) - H(T|x) \text{ where } H(s) = - \sum_{i=1}^{J} p_i log_2 (p_
 
 Although these are seperate measures, they almost always produce the same results, so either or both could be tried in most cases.
 
-## Use Cases
+### Use Cases
 Some of the greatest strengths of decision trees are simplicity and ease of use. They can handle large datasets with little preparation, and each leaf can be described with a list of inequalities, making the model clear and easily interpretable. However, they can be less accurate and less robust than other methods - prone to error and overfitting.
 
-## Examples
+### Examples
 
-### R 
+#### R 
 ```{r, tree}
 modtree <- rpart::rpart(y ~., data = trainset, control = rpart::rpart.control(cp=.0005)) #cp = minimum gain in fit at each split
 preds <- predict(modtree, testset,type="class")
@@ -348,7 +347,7 @@ The r script produces this tree:
 
 ![](Images/rpart.png)
 
-### Python
+#### Python
 
 ```{python}
 import feather, os
@@ -378,17 +377,17 @@ print(df_confusion)
 
 
 
-# Neural Networks
+## Neural Networks
 
-## Theory
+### Theory
 Artificial neural networks are patterned after biological neural networks, with nodes and connections taking the place of neurons and axons. Input nodes are connected to hidden nodes with calculated weights, and these hidden nodes are connected in the same way to another layer of hidden nodes or to the output nodes. These weights are calculated via [backpropogation](https://en.wikipedia.org/wiki/Backpropagation), usually with a steepest descent or other gradient method. [Simulated Annealing](https://en.wikipedia.org/wiki/Simulated_annealing) and [Genetic Models](https://en.wikipedia.org/wiki/Evolutionary_algorithm) are commonly used alternatives.
 
 The theory of neural networks quickly becomes quite complicated, dealing with much more information than one needs to use them effectively. An exellent demo can be found [here](playground.tensorflow.org) - it enables one to see how changing weights and nodes impacts the model and is more easily understood than the paragraphs that would otherwise be needed.
 
-## Use Cases
+### Use Cases
 Neural networks may be most useful with complex data which do not have an obvious mathematical solution. They can be used for both classification and model approximation in a numerical application, and have been adapted for robotics, pattern recognition, decision making, and much more. This flexibility is a great strength, but comes at the cost of intensive procesing. Software like Tensorflow and H2O has been developed to spread these calculations across CPUs and GPUs to enable faster speeds and easier distributed processing. 
 
-## Examples
+### Examples
 
 #### R
 
@@ -431,13 +430,83 @@ print(df_confusion)
 ```
 
 
-# HMM
+## Naive Bayes
 
-# Bayesian
+### Theory
+Naive Bayes is based upon Bayes theorem regarding conditional probabilitites - $P(c|x) = \frac{P(x|c)P(c)}{P(x)}$. It finds features that independently contribute to an observation being in a single class, ignoring any correlations between these features. The impact of each of these features are calculated using Bayes theorem, and then the influences are all added together. Naive Bayes may have some issues with similar classes - think 4 and 9 in our example - but should do well with more distinct classes. 
 
-# Ensemble Techniques
+### Use Cases
+* Small data sets
+* Uncorrelated 
+* Lots of categorical data - assumes normality for numeric data
+* Text Analyses
+* Reccomenders
 
-## Random Forest
-## Bagging & Boosting
+### Examples
+
+#### Equation for our Data
+
+$$
+\begin{align}
+P(x_1=4) &= P(x_1=4|(1,1)=\alpha) + P(x_1=4|(1,2) = \beta) + P(x_1=4|(1,3)=\gamma)+ ... + P(x_1=4|(28,28)=\omega) && \alpha, \beta, \gamma, ...\omega \in (0, 255) 
+\\       &= \frac{P((1,1)=\alpha|x=4)P(x=4)}{P((1,1)=\alpha)} + ... + \frac{P((28,28)=\omega|x=4)P(x=4)}{P((28,28)=\omega)}  && \text{Using Bayes Theorem}
+\\       &= \frac{P((1,1)=\alpha|x=4) \times .458}{P((1,1)=\alpha)} + ... + \frac{P((28,28)=\omega|x=4) \times .458}{P((28,28)=\omega)}  && \text{P(x=4) =} \frac{982}{2144}
+\\ & \text{With the calculations left to the model, this simplifies to 1.}
+\end{align}
+$$
+
+#### R
+
+```{r}
+modbayes <- e1071::naiveBayes(y ~., data = trainset)
+preds <- predict(modbayes, testset[-c(785)], type= "class")
+
+RRhelpr::printClassificationTable(testset$y,preds,"Bayesian")
+```
+
+#### Python
+```{python}
+import feather, os
+import pandas as pd
+from sklearn.naive_bayes import MultinomialNB
+
+path = os.getcwd()
+trainpath = os.path.join(path, "trainset.feather")
+testpath = os.path.join(path, "testset.feather")
+
+train = feather.read_dataframe(trainpath)
+lbls = train['y']
+imgs = train.drop('y', 1)
+test = feather.read_dataframe(testpath)
+lbls_test = test['y']
+imgs_test = test.drop('y', 1)
+
+#initialize and train model
+clf = MultinomialNB()
+clf.fit(imgs, lbls)
+
+#predict
+predictions = clf.predict(imgs_test)
+df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
+print(df_confusion)
+```
+
+
 
 # Unsupervised Learning
+Unsupervised learning takes a dataset and trys to fit classes to it. The focus is on the data and how it forms classes rather than how classes divide the data.
+
+# Ensemble Techniques
+Ensemble techniques are used to combine multiple models to create enhance results that ought to be more accurate and less biased. They can be used with most methods, and even with combinations of methods. 
+
+## Voting
+Just like it sounds, voting involves taking the results of a few models and selecting the result that was chosen most often. This is a simple way to implement an ensemble technique, but may be more computationally intensive than its worth.
+
+## Bootstrap Aggregating (Bagging)
+Similar to voting, but each model is trained on a random subset of the training set. These subsets are made to be the same size as the original training set, but are drawn with replacement, meaning they may contain some duplicate observations. With a large enough set size, these subsets are exspected to have $1 - \frac{1}{e} = 63.2\%$ of the unique points in the original set. This method tends to improve performance for methods like artificial neural networks and decision trees, which are heavily dependent on the incoming dataset.
+
+## Boosting
+Boosting is used to improve poor models by focusing on where those models perform poorly. It takes a group of models with imperfect fit, and then reweights the observations, increading the weights if the classification was erroneous. A new model fit to this newly weighted set is then added to the group, and the new, larger group is again used to reweight observations. Once the group has achieved the desired accuracy, the process is completed. This is very prone to overfitting, as it can over-weight rare observations in the training set. 
+
+## Random Forest
+This may be the most commonly known ensemble method. It essentially applies bagging and then majority vote on decision trees, but at each node in these trees, the splitting feature must be chosen from a random set of $n$ features that is genererated independently at each node. This form of feature selection ensures more variation in the trees, which makes the final forest a stronger model.
