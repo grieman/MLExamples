@@ -217,17 +217,15 @@ In the example below LDA will be used to predict #of cylinders (classes) based o
 
 ### Examples
 
-```{r}
+#### R
 
+```{r}
 data_LDA = mtcars
 
 trainindex = 1:((dim(data_LDA)[1]/5)*4)
-train = data_LDA[trainindex,]
-test = data_LDA[-trainindex, ]
+train_lda = data_LDA[trainindex,]
 
-
-
-cars_LDA <- lda(cyl ~ ., data = mtcars)
+cars_LDA <- lda(cyl ~ ., data = train_lda)
 cars_LDA_validate <- predict(object=cars_LDA, newdata=mtcars)
 data_LDA$PredictedClass = as.character(cars_LDA_validate$class)
 data_LDA$Prob_4cyl = cars_LDA_validate$posterior[,1]
@@ -235,16 +233,45 @@ data_LDA$Prob_6cyl = cars_LDA_validate$posterior[,2]
 data_LDA$Prob_8cyl = cars_LDA_validate$posterior[,3]
 data_LDA$idx = c(1:nrow(data_LDA))
 data_LDA$carnames = rownames(data_LDA)
+data_LDA$traintest <- ifelse(data_LDA$carnames %in% rownames(train_lda),"#004990","#a7a9ac")
 
 data_LDA$PredictedClass
 
 ggplot(data_LDA, aes(x = carnames)) + 
   geom_point(aes(y = cyl, colour = "Actual #Cyl"), shape = 1, size = 5 ) +
   geom_point(aes(y = as.numeric(PredictedClass), colour = "Classified #Cyl"), shape = 4, size = 5 ) +
-  theme(axis.text.x = element_text(angle = 70, hjust = 1))
+  theme(axis.text.x = element_text(angle = 70, hjust = 1, color = data_LDA$traintest[order(data_LDA$carnames)]))
 ```
 
-=======
+#### Python
+```{python}
+import feather, os
+import pandas as pd
+import numpy as np
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+path = os.getcwd()
+trainpath = os.path.join(path, "trainset.feather")
+testpath = os.path.join(path, "testset.feather")
+
+#data intake and prep
+train = feather.read_dataframe(trainpath)
+lbls = train['y']
+imgs = train.drop('y', 1)
+test = feather.read_dataframe(testpath)
+lbls_test = test['y']
+imgs_test = test.drop('y', 1)
+
+#initialize and train model
+clf = LinearDiscriminantAnalysis()
+clf.fit(imgs, lbls)
+clf.score(imgs, lbls)
+
+#predict
+predictions = clf.predict(imgs_test)
+df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
+print(df_confusion)
+```
+
 
 ## Support Vector Machines
 
