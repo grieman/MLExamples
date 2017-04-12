@@ -16,6 +16,7 @@ library(magrittr)
 library(ggplot2)
 library(feather)
 library(plotly)
+library(MASS)
 
 
 load_mnist <- function() {
@@ -183,11 +184,63 @@ Similarly, this is the plot that the above python code generated:
 
 
 
-## LDA
+## Linear Discriminant Analysis (LDA)
 
 ### Theory
+
+Bayesian Probabilistic Approach
+$h(y|x) \propto f(x|y)  \times P(y)$
+
+In plain English, the *posterior* probability distribution of a response variable is proportional to the product of a *prior* and the likelihood of the predictor *data*. A prior is the probability of the response variable for each of the classes. This prior can be based on a guess, or an actual proportion of the data. For instance, on a two class dataset, the prior probability could be 50/50 (a guess) or 30/70 if 30% of the data is class 1 and 70% of the data is class 0, or viceversa. The size of the dataset, and the proportion and variance of the different classes are necessary to be able to define the "prior". The likelihood of the predictor data is based on an assumption of mean and standard deviation of the data. More information on likelihood, using Max Likelihood can be found here: [Maximum Likelihood Wikipedia ](https://en.wikipedia.org/wiki/Maximum_likelihood_estimation) 
+
+Linear Discriminant Analysis (LDA) and Quadratic Discriminant Analysis (QDA) aim to predict the probability distribution of a variable based on a matrix of predictor variables.  The response variable can be logical, numerical, or categorical. LDA and QDA are useful when here is a need for separation between the different classes that make up the response variable. 
+
+In order to avoid overfitting, cross-validation should be considered for the LDA and QDA methods, as well as any other predictive methods which involve classes.
+
+
+###Outputs 
+LDA calculcates the "posterior" probability distribution and predicts the class with the highest probability.
+
+LDA outputs a set of linear discriminants. A discriminant (or canon) is a linear relationship of predictor variables paired up with weights. The canonical value for each record can be calculcated. The resulting numeric output (canon) of this relationship can then be sorted to separate the variables. The number of canons for any analysis will be equal to (k-1), where k is the number of classes. 
+
+LDA and QDA (Quadratic Discriminant Analysis) both follow the same approach, but QDA is utilized when the variances of the target classes are significantly different. If the variance is not class-specific, the analysis becomes linear.
+
 ### Use Cases
+
+* Predicting a "class" from a set of input variables
+* Feature selection using the magnitude of the canon's weights, and correlation between each of the varaibles and the canonical outputs. 
+
+In the example below LDA will be used to predict #of cylinders (classes) based on other vehicle characteristics.
+
+
 ### Examples
+
+```{r}
+
+data_LDA = mtcars
+
+trainindex = 1:((dim(data_LDA)[1]/5)*4)
+train = data_LDA[trainindex,]
+test = data_LDA[-trainindex, ]
+
+
+
+cars_LDA <- lda(cyl ~ ., data = mtcars)
+cars_LDA_validate <- predict(object=cars_LDA, newdata=mtcars)
+data_LDA$PredictedClass = as.character(cars_LDA_validate$class)
+data_LDA$Prob_4cyl = cars_LDA_validate$posterior[,1]
+data_LDA$Prob_6cyl = cars_LDA_validate$posterior[,2]
+data_LDA$Prob_8cyl = cars_LDA_validate$posterior[,3]
+data_LDA$idx = c(1:nrow(data_LDA))
+data_LDA$carnames = rownames(data_LDA)
+
+data_LDA$PredictedClass
+
+ggplot(data_LDA, aes(x = carnames)) + 
+  geom_point(aes(y = cyl, colour = "Actual #Cyl"), shape = 1, size = 5 ) +
+  geom_point(aes(y = as.numeric(PredictedClass), colour = "Classified #Cyl"), shape = 4, size = 5 ) +
+  theme(axis.text.x = element_text(angle = 70, hjust = 1))
+```
 
 
 # Support Vector Machines
