@@ -18,6 +18,21 @@ library(ggplot2)
 library(feather)
 library(plotly)
 library(MASS)
+library (ggplot2)
+library (stats)
+library (dplyr)
+library (reshape2)
+library (ggplot2)
+library (readr)
+library (lubridate)
+library (RRhelpr)
+library (cluster)
+library (fpc)
+library (scales)
+library (knitr)
+library (gtable)
+library (data.table)
+library(DT)
 
 
 load_mnist <- function() {
@@ -118,38 +133,40 @@ unlabeled <- trainset[, 1:784]
 modpca <- prcomp(unlabeled)
 prop.pca <- modpca$sdev^2/sum(modpca$sdev^2)
 plot(prop.pca[1:28])
+
+test = as.data.frame(modpca$x)
 ```
 
 ### Python
 
-```{python, PCA python}
-import feather, os
-import pandas as pd
-from sklearn.decomposition import RandomizedPCA
-import seaborn as sns
+<!-- ```{python, PCA python} -->
+<!-- import feather, os -->
+<!-- import pandas as pd -->
+<!-- from sklearn.decomposition import RandomizedPCA -->
+<!-- import seaborn as sns -->
 
-path = os.getcwd()
-trainpath = os.path.join(path, "trainset.feather")
-plotpath = os.path.join(path, "Images\python_PCA.png")
+<!-- path = os.getcwd() -->
+<!-- trainpath = os.path.join(path, "trainset.feather") -->
+<!-- plotpath = os.path.join(path, "Images\python_PCA.png") -->
 
-#load the data that was loaded then saved in R
-train = feather.read_dataframe(trainpath)
-lbls = train['y']
-imgs = train.drop('y', 1)
+<!-- #load the data that was loaded then saved in R -->
+<!-- train = feather.read_dataframe(trainpath) -->
+<!-- lbls = train['y'] -->
+<!-- imgs = train.drop('y', 1) -->
 
-# train model
-pca = RandomizedPCA(n_components=2) 
-X = pca.fit_transform(imgs)
+<!-- # train model -->
+<!-- pca = RandomizedPCA(n_components=2)  -->
+<!-- X = pca.fit_transform(imgs) -->
 
-# form DataFrame and rename columns
-X = pd.DataFrame(X)
-X.columns = ['PC1', 'PC2']
-X['class'] = lbls
+<!-- # form DataFrame and rename columns -->
+<!-- X = pd.DataFrame(X) -->
+<!-- X.columns = ['PC1', 'PC2'] -->
+<!-- X['class'] = lbls -->
 
-# make and save plot
-sns.set_palette(sns.color_palette("Set3", 10))
-sns.lmplot('PC1', 'PC2', data=X, hue='class', fit_reg=False).savefig(plotpath)
-```
+<!-- # make and save plot -->
+<!-- sns.set_palette(sns.color_palette("Set3", 10)) -->
+<!-- sns.lmplot('PC1', 'PC2', data=X, hue='class', fit_reg=False).savefig(plotpath) -->
+<!-- ``` -->
 
 
 
@@ -177,6 +194,7 @@ Since each observation is made up of a combination of these Principle Components
 
 
 plot_ly(as.data.frame(modpca$x), x=~PC1, y=~PC2, z=~PC3, color = as.factor(trainset$y), type = 'scatter3d')
+
 ```
 
 Similarly, this is the plot that the above python code generated:
@@ -185,6 +203,137 @@ Similarly, this is the plot that the above python code generated:
 
 # Supervised Learning 
 Supervised learning takes pre-defined classes and fits the data to them. Often, these are classification problems with a classified training set, and attempt to classify another data set into the same groups. 
+
+## Clustering Methods
+```{r Kmeansclustering}
+##K MEANS CLUSTERING
+nclusters = 3
+
+
+trainsetkclus <- kmeans(unlabeled,nclusters,nstart = 20)
+trainset$Kclus = trainsetkclus$cluster
+trainset$pca1 = modpca$x[,1]
+trainset$pca2 = modpca$x[,2]
+
+plot_ly(as.data.frame(modpca$x), x=~PC1, y=~PC2, type = "scatter", color = as.factor(trainset$y))
+
+
+```
+
+
+```{r}
+plot_ly(as.data.frame(modpca$x), x=~PC1, y=~PC2, type = "scatter", color = as.factor(trainset$Kclus))
+```
+
+
+K-means Clustering can be better illustrated with a different dataset. An example below is provided using happiness data from the 2016 World Happiness report.
+
+
+```{r Data, echo= FALSE,results='hide', message = FALSE}
+
+happiness_raw <- read_csv('happiness/happiness.csv')
+happiness_std <- scale(happiness_raw[5:11], center = TRUE, scale = TRUE)
+happiness2 = cbind(happiness_raw[1:4], happiness_std)
+happiness = happiness2
+
+myheaders = colnames(happiness)
+
+#Shorten Variable Names
+myheaders[1] = "Country"
+myheaders[5] = "Econ"
+myheaders[7] = "Health"
+myheaders [9] = "Govt_Trust"
+myheaders [10] = "Giving"
+myheaders [11] = "Dystopia_Res"
+colnames(happiness) <- myheaders
+# test = colnames(happiness)
+
+# PCA analysis just so we can overlay clustering results for visualization
+happiness_pca <- stats::prcomp(happiness[5:11], center = TRUE, scale. = TRUE)
+happiness_proportion_pca = happiness_pca$sdev^2/sum(happiness_pca$sdev^2)
+happiness$PC1 = happiness_pca$x[,1]
+happiness$PC2 = happiness_pca$x[,2]
+happiness$PC3 = happiness_pca$x[,3]
+
+##K MEANS CLUSTERING
+nclusters = 3
+happiness_kclus <- kmeans(happiness[5:11],nclusters,nstart = 20)
+happiness$Kclus = happiness_kclus$cluster
+happiness_kclus$KCluster = as.factor(happiness_kclus$cluster)
+
+happiness_K_ClusterSummary <- as.data.frame(happiness_kclus$centers)
+
+#Overlay Cluster means
+
+# happiness_K_ClusterSummary$ClusterID <- as.factor(rownames(happiness_K_ClusterSummary))
+
+# adding the word cluster to the cluster IDs
+happiness_K_ClusterSummary$ClusterID <- paste("Cluster",rownames(happiness_K_ClusterSummary) , sep="_")
+
+happiness_K_ClusterSummary <- happiness_K_ClusterSummary[c(8,1:7)]
+
+happiness_ClusterSummaryPlot <- melt(happiness_K_ClusterSummary,id = "ClusterID")
+
+# plot(happiness$Econ)
+# plot(happiness2$Econ)
+
+```
+
+
+Each cluster tells a different story as explained by the cluster means explained below:
+
+
+
+```{r}
+
+kable(happiness_K_ClusterSummary, caption = "Happiness Data Kmean Cluster Means")
+```
+
+```{r}
+ggplotly(ggplot(data = happiness_ClusterSummaryPlot, aes(x = variable, y = value, group = ClusterID, colour = ClusterID)) + geom_line())
+```
+
+The cluster data can be visualized in 2-dimensional space by color coding the individual values of PC1 and PC2 for each record, as shown below. (For this example, PCA is only calculated to overlay clusters on it)
+
+
+```{r Kclusters_on_PCA, message = FALSE}
+happiness_plotme2 <- ggplot(data = as.data.frame(happiness_pca$x[,1:2]), aes(x = PC1, y = PC2)) +
+  geom_point(size = 2) + geom_point(aes(colour = as.factor(happiness$Kclus))) +
+  labs(x = paste("PC1 (",scales::percent(happiness_proportion_pca[1]), " explained var.)",sep = ""),
+       y = paste("PC2 (", scales::percent(happiness_proportion_pca[2]), " explained var.)", sep = ""))
+
+ggplotly(happiness_plotme2)
+# happiness_plotme2
+
+```
+
+Similarly, overlaid on 3 dimensional space the cluster separation can be observed
+
+```{r Kmeans3D, message = FALSE}
+plot_ly(happiness, x = ~PC1, y = ~PC2, z = ~PC3, color = as.factor(happiness$Kclus), colors = c('red', 'blue', 'green'))
+```
+
+
+We can form some tangible conclusions from the countries that were placed in each of the clusters. Under cluster 2 we can find:
+
+
+```{r}
+happiness_cluster2 = happiness[which(happiness$Kclus ==2),c(1,15)]
+datatable(happiness_cluster2)
+
+```
+
+
+Under cluster 3 we can find:
+
+```{r}
+happiness_cluster3 = happiness[which(happiness$Kclus ==3),c(1,15)]
+datatable(happiness_cluster3)
+
+```
+
+Cluster 1 is
+
 
 ## Linear Discriminant Analysis (LDA)
 
@@ -244,33 +393,33 @@ ggplot(data_LDA, aes(x = carnames)) +
 ```
 
 #### Python
-```{python}
-import feather, os
-import pandas as pd
-import numpy as np
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-path = os.getcwd()
-trainpath = os.path.join(path, "trainset.feather")
-testpath = os.path.join(path, "testset.feather")
+<!-- ```{python} -->
+<!-- import feather, os -->
+<!-- import pandas as pd -->
+<!-- import numpy as np -->
+<!-- from sklearn.discriminant_analysis import LinearDiscriminantAnalysis -->
+<!-- path = os.getcwd() -->
+<!-- trainpath = os.path.join(path, "trainset.feather") -->
+<!-- testpath = os.path.join(path, "testset.feather") -->
 
-#data intake and prep
-train = feather.read_dataframe(trainpath)
-lbls = train['y']
-imgs = train.drop('y', 1)
-test = feather.read_dataframe(testpath)
-lbls_test = test['y']
-imgs_test = test.drop('y', 1)
+<!-- #data intake and prep -->
+<!-- train = feather.read_dataframe(trainpath) -->
+<!-- lbls = train['y'] -->
+<!-- imgs = train.drop('y', 1) -->
+<!-- test = feather.read_dataframe(testpath) -->
+<!-- lbls_test = test['y'] -->
+<!-- imgs_test = test.drop('y', 1) -->
 
-#initialize and train model
-clf = LinearDiscriminantAnalysis()
-clf.fit(imgs, lbls)
-clf.score(imgs, lbls)
+<!-- #initialize and train model -->
+<!-- clf = LinearDiscriminantAnalysis() -->
+<!-- clf.fit(imgs, lbls) -->
+<!-- clf.score(imgs, lbls) -->
 
-#predict
-predictions = clf.predict(imgs_test)
-df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
-print(df_confusion)
-```
+<!-- #predict -->
+<!-- predictions = clf.predict(imgs_test) -->
+<!-- df_confusion = pd.crosstab(lbls_test, predictions, margins=True) -->
+<!-- print(df_confusion) -->
+<!-- ``` -->
 
 
 ## Support Vector Machines
@@ -307,33 +456,33 @@ res <- predict(model, newdata=testset)
 RRhelpr::printClassificationTable(testset$y,res,"SVM")
 ```
 
-```{python}
-import feather, os
-import pandas as pd
-from sklearn import svm
+<!-- ```{python} -->
+<!-- import feather, os -->
+<!-- import pandas as pd -->
+<!-- from sklearn import svm -->
 
-path = os.getcwd()
-trainpath = os.path.join(path, "trainset.feather")
-testpath = os.path.join(path, "testset.feather")
+<!-- path = os.getcwd() -->
+<!-- trainpath = os.path.join(path, "trainset.feather") -->
+<!-- testpath = os.path.join(path, "testset.feather") -->
 
-#data intake and prep
-train = feather.read_dataframe(trainpath)
-lbls = train['y']
-imgs = train.drop('y', 1)
-test = feather.read_dataframe(testpath)
-lbls_test = test['y']
-imgs_test = test.drop('y', 1)
+<!-- #data intake and prep -->
+<!-- train = feather.read_dataframe(trainpath) -->
+<!-- lbls = train['y'] -->
+<!-- imgs = train.drop('y', 1) -->
+<!-- test = feather.read_dataframe(testpath) -->
+<!-- lbls_test = test['y'] -->
+<!-- imgs_test = test.drop('y', 1) -->
 
-#initialize and train model
-svm = svm.SVC(kernel='poly')
-svm.fit(imgs, lbls)
-svm.score(imgs, lbls)
+<!-- #initialize and train model -->
+<!-- svm = svm.SVC(kernel='poly') -->
+<!-- svm.fit(imgs, lbls) -->
+<!-- svm.score(imgs, lbls) -->
 
-#predict
-predictions = svm.predict(imgs_test)
-df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
-print(df_confusion)
-```
+<!-- #predict -->
+<!-- predictions = svm.predict(imgs_test) -->
+<!-- df_confusion = pd.crosstab(lbls_test, predictions, margins=True) -->
+<!-- print(df_confusion) -->
+<!-- ``` -->
 
 ## K-Nearest Neighbors
 
@@ -357,31 +506,31 @@ RRhelpr::printClassificationTable(testset$y,modknn,"KNN")
 
 #### Python
 
-```{python}
-import feather, os
-import pandas as pd
-from sklearn.neighbors import KNeighborsClassifier
+<!-- ```{python} -->
+<!-- import feather, os -->
+<!-- import pandas as pd -->
+<!-- from sklearn.neighbors import KNeighborsClassifier -->
 
-path = os.getcwd()
-trainpath = os.path.join(path, "trainset.feather")
-testpath = os.path.join(path, "testset.feather")
+<!-- path = os.getcwd() -->
+<!-- trainpath = os.path.join(path, "trainset.feather") -->
+<!-- testpath = os.path.join(path, "testset.feather") -->
 
-train = feather.read_dataframe(trainpath)
-lbls = train['y']
-imgs = train.drop('y', 1)
-test = feather.read_dataframe(testpath)
-lbls_test = test['y']
-imgs_test = test.drop('y', 1)
+<!-- train = feather.read_dataframe(trainpath) -->
+<!-- lbls = train['y'] -->
+<!-- imgs = train.drop('y', 1) -->
+<!-- test = feather.read_dataframe(testpath) -->
+<!-- lbls_test = test['y'] -->
+<!-- imgs_test = test.drop('y', 1) -->
 
-# Fit the model on the training data.
-knn = KNeighborsClassifier(n_neighbors=5)
-knn.fit(imgs, lbls)
+<!-- # Fit the model on the training data. -->
+<!-- knn = KNeighborsClassifier(n_neighbors=5) -->
+<!-- knn.fit(imgs, lbls) -->
 
-# Make point predictions on the test set using the fit model.
-predictions = knn.predict(imgs_test)
-df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
-print(df_confusion)
-```
+<!-- # Make point predictions on the test set using the fit model. -->
+<!-- predictions = knn.predict(imgs_test) -->
+<!-- df_confusion = pd.crosstab(lbls_test, predictions, margins=True) -->
+<!-- print(df_confusion) -->
+<!-- ``` -->
 
 ### KNN on PCA
 As discussed above, KNN can be used on the reduced-dimension set output by PCA. This ought to reduce the running time, as there are fewer columns to consider, and increase the accuracy, since these columns correspond to the principle components.
@@ -433,31 +582,31 @@ The r script produces this tree:
 
 #### Python
 
-```{python}
-import feather, os
-import pandas as pd
-from sklearn import tree
+<!-- ```{python} -->
+<!-- import feather, os -->
+<!-- import pandas as pd -->
+<!-- from sklearn import tree -->
 
-path = os.getcwd()
-trainpath = os.path.join(path, "trainset.feather")
-testpath = os.path.join(path, "testset.feather")
+<!-- path = os.getcwd() -->
+<!-- trainpath = os.path.join(path, "trainset.feather") -->
+<!-- testpath = os.path.join(path, "testset.feather") -->
 
-train = feather.read_dataframe(trainpath)
-lbls = train['y']
-imgs = train.drop('y', 1)
-test = feather.read_dataframe(testpath)
-lbls_test = test['y']
-imgs_test = test.drop('y', 1)
+<!-- train = feather.read_dataframe(trainpath) -->
+<!-- lbls = train['y'] -->
+<!-- imgs = train.drop('y', 1) -->
+<!-- test = feather.read_dataframe(testpath) -->
+<!-- lbls_test = test['y'] -->
+<!-- imgs_test = test.drop('y', 1) -->
 
-#initialize and train model
-treemod = tree.DecisionTreeClassifier()
-treemod.fit(imgs, lbls)
+<!-- #initialize and train model -->
+<!-- treemod = tree.DecisionTreeClassifier() -->
+<!-- treemod.fit(imgs, lbls) -->
 
-#predict
-predictions = treemod.predict(imgs_test)
-df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
-print(df_confusion)
-```
+<!-- #predict -->
+<!-- predictions = treemod.predict(imgs_test) -->
+<!-- df_confusion = pd.crosstab(lbls_test, predictions, margins=True) -->
+<!-- print(df_confusion) -->
+<!-- ``` -->
 
 
 
@@ -487,31 +636,31 @@ RRhelpr::printClassificationTable(testset$y,preds,"ANN")
 
 
 #### Python
-```{python}
-import feather, os
-import pandas as pd
-from sklearn.neural_network import MLPClassifier #requires 0.18
+<!-- ```{python} -->
+<!-- import feather, os -->
+<!-- import pandas as pd -->
+<!-- from sklearn.neural_network import MLPClassifier #requires 0.18 -->
 
-path = os.getcwd()
-trainpath = os.path.join(path, "trainset.feather")
-testpath = os.path.join(path, "testset.feather")
+<!-- path = os.getcwd() -->
+<!-- trainpath = os.path.join(path, "trainset.feather") -->
+<!-- testpath = os.path.join(path, "testset.feather") -->
 
-train = feather.read_dataframe(trainpath)
-lbls = train['y']
-imgs = train.drop('y', 1)
-test = feather.read_dataframe(testpath)
-lbls_test = test['y']
-imgs_test = test.drop('y', 1)
+<!-- train = feather.read_dataframe(trainpath) -->
+<!-- lbls = train['y'] -->
+<!-- imgs = train.drop('y', 1) -->
+<!-- test = feather.read_dataframe(testpath) -->
+<!-- lbls_test = test['y'] -->
+<!-- imgs_test = test.drop('y', 1) -->
 
-#initialize and train model
-mlp = MLPClassifier(hidden_layer_sizes=(10))
-mlp.fit(imgs, lbls)
+<!-- #initialize and train model -->
+<!-- mlp = MLPClassifier(hidden_layer_sizes=(10)) -->
+<!-- mlp.fit(imgs, lbls) -->
 
-#predict
-predictions = mlp.predict(imgs_test)
-df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
-print(df_confusion)
-```
+<!-- #predict -->
+<!-- predictions = mlp.predict(imgs_test) -->
+<!-- df_confusion = pd.crosstab(lbls_test, predictions, margins=True) -->
+<!-- print(df_confusion) -->
+<!-- ``` -->
 
 
 ## Naive Bayes
@@ -549,31 +698,31 @@ RRhelpr::printClassificationTable(testset$y,preds,"Bayesian")
 ```
 
 #### Python
-```{python}
-import feather, os
-import pandas as pd
-from sklearn.naive_bayes import MultinomialNB
+<!-- ```{python} -->
+<!-- import feather, os -->
+<!-- import pandas as pd -->
+<!-- from sklearn.naive_bayes import MultinomialNB -->
 
-path = os.getcwd()
-trainpath = os.path.join(path, "trainset.feather")
-testpath = os.path.join(path, "testset.feather")
+<!-- path = os.getcwd() -->
+<!-- trainpath = os.path.join(path, "trainset.feather") -->
+<!-- testpath = os.path.join(path, "testset.feather") -->
 
-train = feather.read_dataframe(trainpath)
-lbls = train['y']
-imgs = train.drop('y', 1)
-test = feather.read_dataframe(testpath)
-lbls_test = test['y']
-imgs_test = test.drop('y', 1)
+<!-- train = feather.read_dataframe(trainpath) -->
+<!-- lbls = train['y'] -->
+<!-- imgs = train.drop('y', 1) -->
+<!-- test = feather.read_dataframe(testpath) -->
+<!-- lbls_test = test['y'] -->
+<!-- imgs_test = test.drop('y', 1) -->
 
-#initialize and train model
-clf = MultinomialNB()
-clf.fit(imgs, lbls)
+<!-- #initialize and train model -->
+<!-- clf = MultinomialNB() -->
+<!-- clf.fit(imgs, lbls) -->
 
-#predict
-predictions = clf.predict(imgs_test)
-df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
-print(df_confusion)
-```
+<!-- #predict -->
+<!-- predictions = clf.predict(imgs_test) -->
+<!-- df_confusion = pd.crosstab(lbls_test, predictions, margins=True) -->
+<!-- print(df_confusion) -->
+<!-- ``` -->
 
 
 
