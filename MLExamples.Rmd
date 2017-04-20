@@ -139,34 +139,34 @@ test = as.data.frame(modpca$x)
 
 ### Python
 
-<!-- ```{python, PCA python} -->
-<!-- import feather, os -->
-<!-- import pandas as pd -->
-<!-- from sklearn.decomposition import RandomizedPCA -->
-<!-- import seaborn as sns -->
+```{python, PCA python}
+import feather, os
+import pandas as pd
+from sklearn.decomposition import RandomizedPCA
+import seaborn as sns
 
-<!-- path = os.getcwd() -->
-<!-- trainpath = os.path.join(path, "trainset.feather") -->
-<!-- plotpath = os.path.join(path, "Images\python_PCA.png") -->
+path = os.getcwd()
+trainpath = os.path.join(path, "trainset.feather")
+plotpath = os.path.join(path, "Images\python_PCA.png")
 
-<!-- #load the data that was loaded then saved in R -->
-<!-- train = feather.read_dataframe(trainpath) -->
-<!-- lbls = train['y'] -->
-<!-- imgs = train.drop('y', 1) -->
+#load the data that was loaded then saved in R
+train = feather.read_dataframe(trainpath)
+lbls = train['y']
+imgs = train.drop('y', 1)
 
-<!-- # train model -->
-<!-- pca = RandomizedPCA(n_components=2)  -->
-<!-- X = pca.fit_transform(imgs) -->
+# train model
+pca = RandomizedPCA(n_components=2)
+X = pca.fit_transform(imgs)
 
-<!-- # form DataFrame and rename columns -->
-<!-- X = pd.DataFrame(X) -->
-<!-- X.columns = ['PC1', 'PC2'] -->
-<!-- X['class'] = lbls -->
+# form DataFrame and rename columns
+X = pd.DataFrame(X)
+X.columns = ['PC1', 'PC2']
+X['class'] = lbls
 
-<!-- # make and save plot -->
-<!-- sns.set_palette(sns.color_palette("Set3", 10)) -->
-<!-- sns.lmplot('PC1', 'PC2', data=X, hue='class', fit_reg=False).savefig(plotpath) -->
-<!-- ``` -->
+# make and save plot
+sns.set_palette(sns.color_palette("Set3", 10))
+sns.lmplot('PC1', 'PC2', data=X, hue='class', fit_reg=False).savefig(plotpath)
+```
 
 
 
@@ -204,7 +204,12 @@ Similarly, this is the plot that the above python code generated:
 # Supervised Learning 
 Supervised learning takes pre-defined classes and fits the data to them. Often, these are classification problems with a classified training set, and attempt to classify another data set into the same groups. 
 
-## Clustering Methods
+## K Means Clustering
+
+### Theory
+
+### Results using the NIMST Data
+
 ```{r Kmeansclustering}
 ##K MEANS CLUSTERING
 nclusters = 3
@@ -225,6 +230,8 @@ plot_ly(as.data.frame(modpca$x), x=~PC1, y=~PC2, type = "scatter", color = as.fa
 plot_ly(as.data.frame(modpca$x), x=~PC1, y=~PC2, type = "scatter", color = as.factor(trainset$Kclus))
 ```
 
+
+## Demonstration using a Different Dataset, World Happiness 2016
 
 K-means Clustering can be better illustrated with a different dataset. An example below is provided using happiness data from the 2016 World Happiness report.
 
@@ -314,17 +321,17 @@ plot_ly(happiness, x = ~PC1, y = ~PC2, z = ~PC3, color = as.factor(happiness$Kcl
 ```
 
 
-We can form some tangible conclusions from the countries that were placed in each of the clusters. Under cluster 2 we can find:
+We can form some tangible conclusions from the countries that were placed in each of the clusters. Under cluster 1 which overall defines the "worse off countries" we can find:
 
 
 ```{r}
-happiness_cluster2 = happiness[which(happiness$Kclus ==2),c(1,15)]
+happiness_cluster2 = happiness[which(happiness$Kclus ==1),c(1,15)]
 datatable(happiness_cluster2)
 
 ```
 
 
-Under cluster 3 we can find:
+Under cluster 3, which encompasses the "better countries" we can find:
 
 ```{r}
 happiness_cluster3 = happiness[which(happiness$Kclus ==3),c(1,15)]
@@ -332,7 +339,119 @@ datatable(happiness_cluster3)
 
 ```
 
-Cluster 1 is
+Cluster 2 contains the average countries, so the list of those countries is not as interesting.
+
+
+## Hierarchical Clustering 
+
+### Theory
+
+Similar to Kmeans, Hierarchical Clustering aims to separate the data based on similarities in each of the variables for each reacord. Hierarchical Clustering, unlike Kmeans, uses Euclidean distance to determine how far away points are in the multidimensional space and it then optimizes the clusters members in a way that their Euclidean distance is minimized. 
+
+Hierarchical clustering is a form of unsupervised machine learning that aims to distinguish types of classes within a multivariate dataset. It takes all the records for all the variables and calculates distances between the points in the multidimensional space. Several techniques for calculating these distances are available but the most common is Euclidean Distance.
+
+Hierarchical clusters can be built up from the ground up (agglomerative), or decomposed from the top down (divisive). Divisive places all points in one cluster and on each iteration the cluster is split based on the member distances. The agglomerative approach starts out with one cluster for each point and begins merging points on each iteration.
+
+Different methods of "linkage" exist to compare the distances between the points and/or clusters. The main ones are:
+- Complete
+- Ward
+- Average
+- Centroid
+
+Each method has pros and cons to account for outliers. 
+
+## Example using World Happiness Data 2016
+
+For a dataset with n number of records up to n clusters may exist. However, choosing an excessively large amount of cluster numbers will be counterproductive as there would exist just a few members in each cluster if there is a large amount of clusters.
+
+A dendogram is an illustration of the breakdown of the clustering based on the Euclidean distances. In this case, three clusters are chosen to characterize the data. A scree plot can be generated from the dendogram to help visualize the magnitude of the distance traveled to make a new clusters. As the distance decreases, points closeby are becoming individual clusters, therefore, the optimal number of points is right after the largest drop-off. This is called the elbow of the scree plot. 
+
+The dendogram for this dataset is shown below, with a color-coded border for the three different clusters identified. In this case, the ward linkage method was used, along with Euclidean distance.
+
+```{r Hierarchical_Clustering, message = FALSE}
+# method = "complete"
+method = "ward.D"
+happiness_clusters_hier <- hclust(dist((happiness[,5:11]), method = "euclidean"), method = method)
+plot(happiness_clusters_hier, cex = 0.6)
+
+# Cut tree into 3 groups
+grp <- cutree(happiness_clusters_hier, k = 3)
+happiness$HierCluster = grp
+
+# # Visualize
+# plot(res.hc, cex = 0.6) # plot tree
+rect.hclust(happiness_clusters_hier, k = 3, border = 2:5) # add rectangles with colors
+```
+
+Similarly to Kmean, hierarchical clusters tell different stories as seen in the cluster means below:
+
+```{r, Hierarchical_stories, message = FALSE}
+hierCluster1data = happiness[which(happiness$HierCluster == 1),5:11]
+hierCluster2data = happiness[which(happiness$HierCluster == 2),5:11]
+hierCluster3data = happiness[which(happiness$HierCluster == 3),5:11]
+
+# Column Means
+Cluster_1 = colMeans(hierCluster1data)
+Cluster_2 = colMeans(hierCluster2data)
+Cluster_3 = colMeans(hierCluster3data)
+
+happiness_hier_ClusterSummary = as.data.frame(rbind(Cluster_1,Cluster_2,Cluster_3))
+
+happiness_hier_ClusterSummary$ClusterID <- as.factor(rownames(happiness_hier_ClusterSummary))
+
+happiness_hier_ClusterSummaryPlot <- melt(happiness_hier_ClusterSummary,id = "ClusterID")
+
+happiness_hier_ClusterSummary <- happiness_hier_ClusterSummary[c(8,1:7)]
+
+ggplotly(ggplot(data = happiness_hier_ClusterSummaryPlot, aes(x = variable, y = value, group = ClusterID, colour = ClusterID)) + geom_line())
+
+```
+
+The cluster means are tabulated below:
+
+
+```{r}
+
+kable(happiness_hier_ClusterSummary, caption = "Happiness Hierarchical Cluster Means")
+
+```
+
+
+Hierarchical clustering tells the same story as Kmeans clustering. There are countries that come overall on top in terms of happiness and well being. Other countries are average. Others rank lowly in all the happiness characteristics. 
+
+Below are the countries in Cluster 3
+
+```{r}
+happiness_hiercluster3 = happiness[which(happiness$HierCluster ==3),c(1,16)]
+datatable(happiness_hiercluster3)
+
+```
+
+Below are the countries in Cluster 1
+
+```{r}
+happiness_hiercluster1 = happiness[which(happiness$HierCluster ==1),c(1,16)]
+datatable(happiness_hiercluster1)
+
+```
+
+
+Overlaying the hierarchical clusters on to a World Map you can see that the way clustering characterized the countries makes sense:
+
+
+```{r map_visualization, message = FALSE}
+
+map_world = map_data("world")
+
+happiness$Country[c(18,75,77,78,122)] <- c("UK", "USA", "Republic of Congo", "Democratic Republic of the Congo", "Palestine")
+
+happiness$HierCluster %<>% as.factor %>% plyr::mapvalues(c(1,2,3), c("Mid", "Bottom", "Top"))
+
+map_world_joined <- left_join(map_world,happiness, by = c('region' = 'Country'))
+
+ggplot() + geom_polygon(data = map_world_joined, aes(x = long, y = lat, group = group, fill=HierCluster), color = "#000000") 
+
+```
 
 
 ## Linear Discriminant Analysis (LDA)
@@ -346,7 +465,7 @@ In plain English, the *posterior* probability distribution of a response variabl
 
 Linear Discriminant Analysis (LDA) and Quadratic Discriminant Analysis (QDA) aim to predict the probability distribution of a variable based on a matrix of predictor variables.  The response variable can be logical, numerical, or categorical. LDA and QDA are useful when here is a need for separation between the different classes that make up the response variable. 
 
-In order to avoid overfitting, cross-validation should be considered for the LDA and QDA methods, as well as any other predictive methods which involve classes.
+In order to avoid overfitting, cross-validation should be considered for the LDA and QDA methods, as well as any other predictive methods which involve classes. Cross-validation will allow for model tuning, which is the process of setting a probability threshold for each class in order to decided which class is to be predicted. More on cross-validation is explained in a later section.
 
 
 ###Outputs 
@@ -393,33 +512,33 @@ ggplot(data_LDA, aes(x = carnames)) +
 ```
 
 #### Python
-<!-- ```{python} -->
-<!-- import feather, os -->
-<!-- import pandas as pd -->
-<!-- import numpy as np -->
-<!-- from sklearn.discriminant_analysis import LinearDiscriminantAnalysis -->
-<!-- path = os.getcwd() -->
-<!-- trainpath = os.path.join(path, "trainset.feather") -->
-<!-- testpath = os.path.join(path, "testset.feather") -->
+```{python}
+import feather, os
+import pandas as pd
+import numpy as np
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+path = os.getcwd()
+trainpath = os.path.join(path, "trainset.feather")
+testpath = os.path.join(path, "testset.feather")
 
-<!-- #data intake and prep -->
-<!-- train = feather.read_dataframe(trainpath) -->
-<!-- lbls = train['y'] -->
-<!-- imgs = train.drop('y', 1) -->
-<!-- test = feather.read_dataframe(testpath) -->
-<!-- lbls_test = test['y'] -->
-<!-- imgs_test = test.drop('y', 1) -->
+#data intake and prep
+train = feather.read_dataframe(trainpath)
+lbls = train['y']
+imgs = train.drop('y', 1)
+test = feather.read_dataframe(testpath)
+lbls_test = test['y']
+imgs_test = test.drop('y', 1)
 
-<!-- #initialize and train model -->
-<!-- clf = LinearDiscriminantAnalysis() -->
-<!-- clf.fit(imgs, lbls) -->
-<!-- clf.score(imgs, lbls) -->
+#initialize and train model
+clf = LinearDiscriminantAnalysis()
+clf.fit(imgs, lbls)
+clf.score(imgs, lbls)
 
-<!-- #predict -->
-<!-- predictions = clf.predict(imgs_test) -->
-<!-- df_confusion = pd.crosstab(lbls_test, predictions, margins=True) -->
-<!-- print(df_confusion) -->
-<!-- ``` -->
+#predict
+predictions = clf.predict(imgs_test)
+df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
+print(df_confusion)
+```
 
 
 ## Support Vector Machines
@@ -456,40 +575,40 @@ res <- predict(model, newdata=testset)
 RRhelpr::printClassificationTable(testset$y,res,"SVM")
 ```
 
-<!-- ```{python} -->
-<!-- import feather, os -->
-<!-- import pandas as pd -->
-<!-- from sklearn import svm -->
+```{python}
+import feather, os
+import pandas as pd
+from sklearn import svm
 
-<!-- path = os.getcwd() -->
-<!-- trainpath = os.path.join(path, "trainset.feather") -->
-<!-- testpath = os.path.join(path, "testset.feather") -->
+path = os.getcwd()
+trainpath = os.path.join(path, "trainset.feather")
+testpath = os.path.join(path, "testset.feather")
 
-<!-- #data intake and prep -->
-<!-- train = feather.read_dataframe(trainpath) -->
-<!-- lbls = train['y'] -->
-<!-- imgs = train.drop('y', 1) -->
-<!-- test = feather.read_dataframe(testpath) -->
-<!-- lbls_test = test['y'] -->
-<!-- imgs_test = test.drop('y', 1) -->
+#data intake and prep
+train = feather.read_dataframe(trainpath)
+lbls = train['y']
+imgs = train.drop('y', 1)
+test = feather.read_dataframe(testpath)
+lbls_test = test['y']
+imgs_test = test.drop('y', 1)
 
-<!-- #initialize and train model -->
-<!-- svm = svm.SVC(kernel='poly') -->
-<!-- svm.fit(imgs, lbls) -->
-<!-- svm.score(imgs, lbls) -->
+#initialize and train model
+svm = svm.SVC(kernel='poly')
+svm.fit(imgs, lbls)
+svm.score(imgs, lbls)
 
-<!-- #predict -->
-<!-- predictions = svm.predict(imgs_test) -->
-<!-- df_confusion = pd.crosstab(lbls_test, predictions, margins=True) -->
-<!-- print(df_confusion) -->
-<!-- ``` -->
+#predict
+predictions = svm.predict(imgs_test)
+df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
+print(df_confusion)
+```
 
 ## K-Nearest Neighbors
 
 ### Theory
-* K-Nearest Neighbors uses a majority vote of the closest $k$ points to classify any given point. 
-* The distance metric and value of $k$ can be modified, but a relatively small $k$ value (often $k = \sqrt{n}$ to balance speed and noise in complex sets) produces acceptable results without requiring too much processing power. 
-* The only assumption that this algorithm makes is that the points are in a metric space, which most datasets ought to satisfy without any modification. 
+* K-Nearest Neighbors uses a majority vote of the closest $k$ points to classify any given point.
+* The distance metric and value of $k$ can be modified, but a relatively small $k$ value (often $k = \sqrt{n}$ to balance speed and noise in complex sets) produces acceptable results without requiring too much processing power.
+* The only assumption that this algorithm makes is that the points are in a metric space, which most datasets ought to satisfy without any modification.
 * A one-nearest neighbor algorithm will have a maximum error rate of wo times the dataset's Bayes error rate, the irreducible error of a set.
 
 ### Use Cases
@@ -506,31 +625,31 @@ RRhelpr::printClassificationTable(testset$y,modknn,"KNN")
 
 #### Python
 
-<!-- ```{python} -->
-<!-- import feather, os -->
-<!-- import pandas as pd -->
-<!-- from sklearn.neighbors import KNeighborsClassifier -->
+```{python}
+import feather, os
+import pandas as pd
+from sklearn.neighbors import KNeighborsClassifier
 
-<!-- path = os.getcwd() -->
-<!-- trainpath = os.path.join(path, "trainset.feather") -->
-<!-- testpath = os.path.join(path, "testset.feather") -->
+path = os.getcwd()
+trainpath = os.path.join(path, "trainset.feather")
+testpath = os.path.join(path, "testset.feather")
 
-<!-- train = feather.read_dataframe(trainpath) -->
-<!-- lbls = train['y'] -->
-<!-- imgs = train.drop('y', 1) -->
-<!-- test = feather.read_dataframe(testpath) -->
-<!-- lbls_test = test['y'] -->
-<!-- imgs_test = test.drop('y', 1) -->
+train = feather.read_dataframe(trainpath)
+lbls = train['y']
+imgs = train.drop('y', 1)
+test = feather.read_dataframe(testpath)
+lbls_test = test['y']
+imgs_test = test.drop('y', 1)
 
-<!-- # Fit the model on the training data. -->
-<!-- knn = KNeighborsClassifier(n_neighbors=5) -->
-<!-- knn.fit(imgs, lbls) -->
+# Fit the model on the training data.
+knn = KNeighborsClassifier(n_neighbors=5)
+knn.fit(imgs, lbls)
 
-<!-- # Make point predictions on the test set using the fit model. -->
-<!-- predictions = knn.predict(imgs_test) -->
-<!-- df_confusion = pd.crosstab(lbls_test, predictions, margins=True) -->
-<!-- print(df_confusion) -->
-<!-- ``` -->
+# Make point predictions on the test set using the fit model.
+predictions = knn.predict(imgs_test)
+df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
+print(df_confusion)
+```
 
 ### KNN on PCA
 As discussed above, KNN can be used on the reduced-dimension set output by PCA. This ought to reduce the running time, as there are fewer columns to consider, and increase the accuracy, since these columns correspond to the principle components.
@@ -547,7 +666,7 @@ RRhelpr::printClassificationTable(testset$y,prediction_pca,"KNN fitted on the ab
 
 Typically, a decision tree algorithm seeks to split the data as best as possible at each step (leaf), maximizing the difference between the two resulting leaves until no more 'useful' splits can be found. For classification trees, these best splits are usually calculated by one of two indeces: Gini Impurity or Information Gain.
 
-### Gini Impurity 
+### Gini Impurity
 Gini Impurity measures the innaccuracy of a split for a given class $i$, and ought to be minimized:
 Supposing we have $J$ classes, $i \in {1,2,3,...,J}$ and $g_i$ is the fraction of observations that are labeled with class $i$.
 $$ I_G (f) = \sum_{i=1}^{J} f_i (1-f_i) = 1 - \sum_{i=1}^{J} f_i^2 = \sum_{i \neq k} f_i f_k $$
@@ -564,7 +683,7 @@ Some of the greatest strengths of decision trees are simplicity and ease of use.
 
 ### Examples
 
-#### R 
+#### R
 ```{r, tree}
 modtree <- rpart::rpart(y ~., data = trainset, control = rpart::rpart.control(cp=.0005)) #cp = minimum gain in fit at each split
 preds <- predict(modtree, testset,type="class")
@@ -582,31 +701,31 @@ The r script produces this tree:
 
 #### Python
 
-<!-- ```{python} -->
-<!-- import feather, os -->
-<!-- import pandas as pd -->
-<!-- from sklearn import tree -->
+```{python}
+import feather, os
+import pandas as pd
+from sklearn import tree
 
-<!-- path = os.getcwd() -->
-<!-- trainpath = os.path.join(path, "trainset.feather") -->
-<!-- testpath = os.path.join(path, "testset.feather") -->
+path = os.getcwd()
+trainpath = os.path.join(path, "trainset.feather")
+testpath = os.path.join(path, "testset.feather")
 
-<!-- train = feather.read_dataframe(trainpath) -->
-<!-- lbls = train['y'] -->
-<!-- imgs = train.drop('y', 1) -->
-<!-- test = feather.read_dataframe(testpath) -->
-<!-- lbls_test = test['y'] -->
-<!-- imgs_test = test.drop('y', 1) -->
+train = feather.read_dataframe(trainpath)
+lbls = train['y']
+imgs = train.drop('y', 1)
+test = feather.read_dataframe(testpath)
+lbls_test = test['y']
+imgs_test = test.drop('y', 1)
 
-<!-- #initialize and train model -->
-<!-- treemod = tree.DecisionTreeClassifier() -->
-<!-- treemod.fit(imgs, lbls) -->
+#initialize and train model
+treemod = tree.DecisionTreeClassifier()
+treemod.fit(imgs, lbls)
 
-<!-- #predict -->
-<!-- predictions = treemod.predict(imgs_test) -->
-<!-- df_confusion = pd.crosstab(lbls_test, predictions, margins=True) -->
-<!-- print(df_confusion) -->
-<!-- ``` -->
+#predict
+predictions = treemod.predict(imgs_test)
+df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
+print(df_confusion)
+```
 
 
 
@@ -618,7 +737,7 @@ Artificial neural networks are patterned after biological neural networks, with 
 The theory of neural networks quickly becomes quite complicated, dealing with much more information than one needs to use them effectively. An exellent demo can be found [here](playground.tensorflow.org) - it enables one to see how changing weights and nodes impacts the model and is more easily understood than the paragraphs that would otherwise be needed.
 
 ### Use Cases
-Neural networks may be most useful with complex data which do not have an obvious mathematical solution. They can be used for both classification and model approximation in a numerical application, and have been adapted for robotics, pattern recognition, decision making, and much more. This flexibility is a great strength, but comes at the cost of intensive procesing. Software like Tensorflow and H2O has been developed to spread these calculations across CPUs and GPUs to enable faster speeds and easier distributed processing. 
+Neural networks may be most useful with complex data which do not have an obvious mathematical solution. They can be used for both classification and model approximation in a numerical application, and have been adapted for robotics, pattern recognition, decision making, and much more. This flexibility is a great strength, but comes at the cost of intensive procesing. Software like Tensorflow and H2O has been developed to spread these calculations across CPUs and GPUs to enable faster speeds and easier distributed processing.
 
 ### Examples
 
@@ -636,41 +755,41 @@ RRhelpr::printClassificationTable(testset$y,preds,"ANN")
 
 
 #### Python
-<!-- ```{python} -->
-<!-- import feather, os -->
-<!-- import pandas as pd -->
-<!-- from sklearn.neural_network import MLPClassifier #requires 0.18 -->
+```{python}
+import feather, os
+import pandas as pd
+from sklearn.neural_network import MLPClassifier #requires 0.18
 
-<!-- path = os.getcwd() -->
-<!-- trainpath = os.path.join(path, "trainset.feather") -->
-<!-- testpath = os.path.join(path, "testset.feather") -->
+path = os.getcwd()
+trainpath = os.path.join(path, "trainset.feather")
+testpath = os.path.join(path, "testset.feather")
 
-<!-- train = feather.read_dataframe(trainpath) -->
-<!-- lbls = train['y'] -->
-<!-- imgs = train.drop('y', 1) -->
-<!-- test = feather.read_dataframe(testpath) -->
-<!-- lbls_test = test['y'] -->
-<!-- imgs_test = test.drop('y', 1) -->
+train = feather.read_dataframe(trainpath)
+lbls = train['y']
+imgs = train.drop('y', 1)
+test = feather.read_dataframe(testpath)
+lbls_test = test['y']
+imgs_test = test.drop('y', 1)
 
-<!-- #initialize and train model -->
-<!-- mlp = MLPClassifier(hidden_layer_sizes=(10)) -->
-<!-- mlp.fit(imgs, lbls) -->
+#initialize and train model
+mlp = MLPClassifier(hidden_layer_sizes=(10))
+mlp.fit(imgs, lbls)
 
-<!-- #predict -->
-<!-- predictions = mlp.predict(imgs_test) -->
-<!-- df_confusion = pd.crosstab(lbls_test, predictions, margins=True) -->
-<!-- print(df_confusion) -->
-<!-- ``` -->
+#predict
+predictions = mlp.predict(imgs_test)
+df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
+print(df_confusion)
+```
 
 
 ## Naive Bayes
 
 ### Theory
-Naive Bayes is based upon Bayes theorem regarding conditional probabilitites - $P(c|x) = \frac{P(x|c)P(c)}{P(x)}$. It finds features that independently contribute to an observation being in a single class, ignoring any correlations between these features. The impact of each of these features are calculated using Bayes theorem, and then the influences are all added together. Naive Bayes may have some issues with similar classes - think 4 and 9 in our example - but should do well with more distinct classes. 
+Naive Bayes is based upon Bayes theorem regarding conditional probabilitites - $P(c|x) = \frac{P(x|c)P(c)}{P(x)}$. It finds features that independently contribute to an observation being in a single class, ignoring any correlations between these features. The impact of each of these features are calculated using Bayes theorem, and then the influences are all added together. Naive Bayes may have some issues with similar classes - think 4 and 9 in our example - but should do well with more distinct classes.
 
 ### Use Cases
 * Small data sets
-* Uncorrelated 
+* Uncorrelated
 * Lots of categorical data - assumes normality for numeric data
 * Text Analyses
 * Reccomenders
@@ -681,7 +800,7 @@ Naive Bayes is based upon Bayes theorem regarding conditional probabilitites - $
 
 $$
 \begin{align}
-P(x_1=4) &= P(x_1=4|(1,1)=\alpha) + P(x_1=4|(1,2) = \beta) + P(x_1=4|(1,3)=\gamma)+ ... + P(x_1=4|(28,28)=\omega) && \alpha, \beta, \gamma, ...\omega \in (0, 255) 
+P(x_1=4) &= P(x_1=4|(1,1)=\alpha) + P(x_1=4|(1,2) = \beta) + P(x_1=4|(1,3)=\gamma)+ ... + P(x_1=4|(28,28)=\omega) && \alpha, \beta, \gamma, ...\omega \in (0, 255)
 \\       &= \frac{P((1,1)=\alpha|x=4)P(x=4)}{P((1,1)=\alpha)} + ... + \frac{P((28,28)=\omega|x=4)P(x=4)}{P((28,28)=\omega)}  && \text{Using Bayes Theorem}
 \\       &= \frac{P((1,1)=\alpha|x=4) \times .458}{P((1,1)=\alpha)} + ... + \frac{P((28,28)=\omega|x=4) \times .458}{P((28,28)=\omega)}  && \text{P(x=4) =} \frac{982}{2144}
 \\ & \text{With the calculations left to the model, this simplifies to 1.}
@@ -698,31 +817,31 @@ RRhelpr::printClassificationTable(testset$y,preds,"Bayesian")
 ```
 
 #### Python
-<!-- ```{python} -->
-<!-- import feather, os -->
-<!-- import pandas as pd -->
-<!-- from sklearn.naive_bayes import MultinomialNB -->
+```{python}
+import feather, os
+import pandas as pd
+from sklearn.naive_bayes import MultinomialNB
 
-<!-- path = os.getcwd() -->
-<!-- trainpath = os.path.join(path, "trainset.feather") -->
-<!-- testpath = os.path.join(path, "testset.feather") -->
+path = os.getcwd()
+trainpath = os.path.join(path, "trainset.feather")
+testpath = os.path.join(path, "testset.feather")
 
-<!-- train = feather.read_dataframe(trainpath) -->
-<!-- lbls = train['y'] -->
-<!-- imgs = train.drop('y', 1) -->
-<!-- test = feather.read_dataframe(testpath) -->
-<!-- lbls_test = test['y'] -->
-<!-- imgs_test = test.drop('y', 1) -->
+train = feather.read_dataframe(trainpath)
+lbls = train['y']
+imgs = train.drop('y', 1)
+test = feather.read_dataframe(testpath)
+lbls_test = test['y']
+imgs_test = test.drop('y', 1)
 
-<!-- #initialize and train model -->
-<!-- clf = MultinomialNB() -->
-<!-- clf.fit(imgs, lbls) -->
+#initialize and train model
+clf = MultinomialNB()
+clf.fit(imgs, lbls)
 
-<!-- #predict -->
-<!-- predictions = clf.predict(imgs_test) -->
-<!-- df_confusion = pd.crosstab(lbls_test, predictions, margins=True) -->
-<!-- print(df_confusion) -->
-<!-- ``` -->
+#predict
+predictions = clf.predict(imgs_test)
+df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
+print(df_confusion)
+```
 
 
 
@@ -730,7 +849,7 @@ RRhelpr::printClassificationTable(testset$y,preds,"Bayesian")
 Unsupervised learning takes a dataset and trys to fit classes to it. The focus is on the data and how it forms classes rather than how classes divide the data.
 
 # Ensemble Techniques
-Ensemble techniques are used to combine multiple models to create enhance results that ought to be more accurate and less biased. They can be used with most methods, and even with combinations of methods. 
+Ensemble techniques are used to combine multiple models to create enhance results that ought to be more accurate and less biased. They can be used with most methods, and even with combinations of methods.
 
 ## Voting
 Just like it sounds, voting involves taking the results of a few models and selecting the result that was chosen most often. This is a simple way to implement an ensemble technique, but may be more computationally intensive than its worth.
@@ -739,7 +858,7 @@ Just like it sounds, voting involves taking the results of a few models and sele
 Similar to voting, but each model is trained on a random subset of the training set. These subsets are made to be the same size as the original training set, but are drawn with replacement, meaning they may contain some duplicate observations. With a large enough set size, these subsets are exspected to have $1 - \frac{1}{e} = 63.2\%$ of the unique points in the original set. This method tends to improve performance for methods like artificial neural networks and decision trees, which are heavily dependent on the incoming dataset.
 
 ## Boosting
-Boosting is used to improve poor models by focusing on where those models perform poorly. It takes a group of models with imperfect fit, and then reweights the observations, increading the weights if the classification was erroneous. A new model fit to this newly weighted set is then added to the group, and the new, larger group is again used to reweight observations. Once the group has achieved the desired accuracy, the process is completed. This is very prone to overfitting, as it can over-weight rare observations in the training set. 
+Boosting is used to improve poor models by focusing on where those models perform poorly. It takes a group of models with imperfect fit, and then reweights the observations, increading the weights if the classification was erroneous. A new model fit to this newly weighted set is then added to the group, and the new, larger group is again used to reweight observations. Once the group has achieved the desired accuracy, the process is completed. This is very prone to overfitting, as it can over-weight rare observations in the training set.
 
 ## Random Forest
 This may be the most commonly known ensemble method. It essentially applies bagging and then majority vote on decision trees, but at each node in these trees, the splitting feature must be chosen from a random set of $n$ features that is genererated independently at each node. This form of feature selection ensures more variation in the trees, which makes the final forest a stronger model.
