@@ -13,26 +13,17 @@ output:
 ---
 
 ```{r setup}
-library(magrittr)
-library(ggplot2)
-library(feather)
-library(plotly)
-library(MASS)
-library (ggplot2)
-library (stats)
-library (dplyr)
-library (reshape2)
-library (ggplot2)
-library (readr)
-library (lubridate)
+installnload_packages <- function(packages){
+  packages.new <- packages[!(packages %in% installed.packages()[,"Package"])]
+  if(length(packages.new)) install.packages(packages.new)
+  for (i in 1:length(packages)) {temp <- packages[i]; library(temp, character.only = T)}
+}
+
+used_packages <- c("magrittr", "ggplot2", "feather","plotly", "MASS","dplyr","reshape2","readr","lubridate","cluster","fpc","scales","knitr","gtable","data.table","DT","e1071","class","rpart","rpart.plot","nnet")
+
+installnload_packages(used_packages)
+
 library (RRhelpr)
-library (cluster)
-library (fpc)
-library (scales)
-library (knitr)
-library (gtable)
-library (data.table)
-library(DT)
 
 
 load_mnist <- function() {
@@ -130,11 +121,9 @@ PCA Analysis is conducted and the Eigen Values and Eigen Vectors are generated. 
 #  since all our values have the same scale, we will not scale and recenter; this could be done 
 #  by setting prcomp(train$x, center=TRUE, scale.=TRUE)
 unlabeled <- trainset[, 1:784]
-modpca <- prcomp(unlabeled)
+modpca <- stats::prcomp(unlabeled)
 prop.pca <- modpca$sdev^2/sum(modpca$sdev^2)
 plot(prop.pca[1:28])
-
-test = as.data.frame(modpca$x)
 ```
 
 ### Python
@@ -187,14 +176,7 @@ par(mfrow=c(1,1))
 Since each observation is made up of a combination of these Principle Components, we would expect the zeros to have high PC1 values, which we see is true by this plot below, with PC1 on the x-axis and PC2 on the y-axis. However, most of the classes are hard to separate.
 
 ```{r, PCA plot}
-#ggplot2::ggplot(data=as.data.frame(modpca$x[,1:2]), ggplot2::aes(x=PC1, y=PC2, color=trainset$y)) +
-#        ggplot2::geom_point(size=2) + RRhelpr::theme_RR() + scale_color_brewer(type="qual", palette="Set3") +
-#        ggplot2::labs(x = paste("PC1 (", scales::percent(prop.pca[1]), " explained var.)", sep=""),
-#                      y = paste("PC2 (", scales::percent(prop.pca[2]), " explained var.)", sep=""))
-
-
 plot_ly(as.data.frame(modpca$x), x=~PC1, y=~PC2, z=~PC3, color = as.factor(trainset$y), type = 'scatter3d')
-
 ```
 
 Similarly, this is the plot that the above python code generated:
@@ -203,256 +185,6 @@ Similarly, this is the plot that the above python code generated:
 
 # Supervised Learning 
 Supervised learning takes pre-defined classes and fits the data to them. Often, these are classification problems with a classified training set, and attempt to classify another data set into the same groups. 
-
-## K Means Clustering
-
-### Theory
-
-### Results using the NIMST Data
-
-```{r Kmeansclustering}
-##K MEANS CLUSTERING
-nclusters = 3
-
-
-trainsetkclus <- kmeans(unlabeled,nclusters,nstart = 20)
-trainset$Kclus = trainsetkclus$cluster
-trainset$pca1 = modpca$x[,1]
-trainset$pca2 = modpca$x[,2]
-
-plot_ly(as.data.frame(modpca$x), x=~PC1, y=~PC2, type = "scatter", color = as.factor(trainset$y))
-
-
-```
-
-
-```{r}
-plot_ly(as.data.frame(modpca$x), x=~PC1, y=~PC2, type = "scatter", color = as.factor(trainset$Kclus))
-```
-
-
-## Demonstration using a Different Dataset, World Happiness 2016
-
-K-means Clustering can be better illustrated with a different dataset. An example below is provided using happiness data from the 2016 World Happiness report.
-
-
-```{r Data, echo= FALSE,results='hide', message = FALSE}
-
-happiness_raw <- read_csv('happiness/happiness.csv')
-happiness_std <- scale(happiness_raw[5:11], center = TRUE, scale = TRUE)
-happiness2 = cbind(happiness_raw[1:4], happiness_std)
-happiness = happiness2
-
-myheaders = colnames(happiness)
-
-#Shorten Variable Names
-myheaders[1] = "Country"
-myheaders[5] = "Econ"
-myheaders[7] = "Health"
-myheaders [9] = "Govt_Trust"
-myheaders [10] = "Giving"
-myheaders [11] = "Dystopia_Res"
-colnames(happiness) <- myheaders
-# test = colnames(happiness)
-
-# PCA analysis just so we can overlay clustering results for visualization
-happiness_pca <- stats::prcomp(happiness[5:11], center = TRUE, scale. = TRUE)
-happiness_proportion_pca = happiness_pca$sdev^2/sum(happiness_pca$sdev^2)
-happiness$PC1 = happiness_pca$x[,1]
-happiness$PC2 = happiness_pca$x[,2]
-happiness$PC3 = happiness_pca$x[,3]
-
-##K MEANS CLUSTERING
-nclusters = 3
-happiness_kclus <- kmeans(happiness[5:11],nclusters,nstart = 20)
-happiness$Kclus = happiness_kclus$cluster
-happiness_kclus$KCluster = as.factor(happiness_kclus$cluster)
-
-happiness_K_ClusterSummary <- as.data.frame(happiness_kclus$centers)
-
-#Overlay Cluster means
-
-# happiness_K_ClusterSummary$ClusterID <- as.factor(rownames(happiness_K_ClusterSummary))
-
-# adding the word cluster to the cluster IDs
-happiness_K_ClusterSummary$ClusterID <- paste("Cluster",rownames(happiness_K_ClusterSummary) , sep="_")
-
-happiness_K_ClusterSummary <- happiness_K_ClusterSummary[c(8,1:7)]
-
-happiness_ClusterSummaryPlot <- melt(happiness_K_ClusterSummary,id = "ClusterID")
-
-# plot(happiness$Econ)
-# plot(happiness2$Econ)
-
-```
-
-
-Each cluster tells a different story as explained by the cluster means explained below:
-
-
-
-```{r}
-
-kable(happiness_K_ClusterSummary, caption = "Happiness Data Kmean Cluster Means")
-```
-
-```{r}
-ggplotly(ggplot(data = happiness_ClusterSummaryPlot, aes(x = variable, y = value, group = ClusterID, colour = ClusterID)) + geom_line())
-```
-
-The cluster data can be visualized in 2-dimensional space by color coding the individual values of PC1 and PC2 for each record, as shown below. (For this example, PCA is only calculated to overlay clusters on it)
-
-
-```{r Kclusters_on_PCA, message = FALSE}
-happiness_plotme2 <- ggplot(data = as.data.frame(happiness_pca$x[,1:2]), aes(x = PC1, y = PC2)) +
-  geom_point(size = 2) + geom_point(aes(colour = as.factor(happiness$Kclus))) +
-  labs(x = paste("PC1 (",scales::percent(happiness_proportion_pca[1]), " explained var.)",sep = ""),
-       y = paste("PC2 (", scales::percent(happiness_proportion_pca[2]), " explained var.)", sep = ""))
-
-ggplotly(happiness_plotme2)
-# happiness_plotme2
-
-```
-
-Similarly, overlaid on 3 dimensional space the cluster separation can be observed
-
-```{r Kmeans3D, message = FALSE}
-plot_ly(happiness, x = ~PC1, y = ~PC2, z = ~PC3, color = as.factor(happiness$Kclus), colors = c('red', 'blue', 'green'))
-```
-
-
-We can form some tangible conclusions from the countries that were placed in each of the clusters. Under cluster 1 which overall defines the "worse off countries" we can find:
-
-
-```{r}
-happiness_cluster2 = happiness[which(happiness$Kclus ==1),c(1,15)]
-datatable(happiness_cluster2)
-
-```
-
-
-Under cluster 3, which encompasses the "better countries" we can find:
-
-```{r}
-happiness_cluster3 = happiness[which(happiness$Kclus ==3),c(1,15)]
-datatable(happiness_cluster3)
-
-```
-
-Cluster 2 contains the average countries, so the list of those countries is not as interesting.
-
-
-## Hierarchical Clustering 
-
-### Theory
-
-Similar to Kmeans, Hierarchical Clustering aims to separate the data based on similarities in each of the variables for each reacord. Hierarchical Clustering, unlike Kmeans, uses Euclidean distance to determine how far away points are in the multidimensional space and it then optimizes the clusters members in a way that their Euclidean distance is minimized. 
-
-Hierarchical clustering is a form of unsupervised machine learning that aims to distinguish types of classes within a multivariate dataset. It takes all the records for all the variables and calculates distances between the points in the multidimensional space. Several techniques for calculating these distances are available but the most common is Euclidean Distance.
-
-Hierarchical clusters can be built up from the ground up (agglomerative), or decomposed from the top down (divisive). Divisive places all points in one cluster and on each iteration the cluster is split based on the member distances. The agglomerative approach starts out with one cluster for each point and begins merging points on each iteration.
-
-Different methods of "linkage" exist to compare the distances between the points and/or clusters. The main ones are:
-- Complete
-- Ward
-- Average
-- Centroid
-
-Each method has pros and cons to account for outliers. 
-
-## Example using World Happiness Data 2016
-
-For a dataset with n number of records up to n clusters may exist. However, choosing an excessively large amount of cluster numbers will be counterproductive as there would exist just a few members in each cluster if there is a large amount of clusters.
-
-A dendogram is an illustration of the breakdown of the clustering based on the Euclidean distances. In this case, three clusters are chosen to characterize the data. A scree plot can be generated from the dendogram to help visualize the magnitude of the distance traveled to make a new clusters. As the distance decreases, points closeby are becoming individual clusters, therefore, the optimal number of points is right after the largest drop-off. This is called the elbow of the scree plot. 
-
-The dendogram for this dataset is shown below, with a color-coded border for the three different clusters identified. In this case, the ward linkage method was used, along with Euclidean distance.
-
-```{r Hierarchical_Clustering, message = FALSE}
-# method = "complete"
-method = "ward.D"
-happiness_clusters_hier <- hclust(dist((happiness[,5:11]), method = "euclidean"), method = method)
-plot(happiness_clusters_hier, cex = 0.6)
-
-# Cut tree into 3 groups
-grp <- cutree(happiness_clusters_hier, k = 3)
-happiness$HierCluster = grp
-
-# # Visualize
-# plot(res.hc, cex = 0.6) # plot tree
-rect.hclust(happiness_clusters_hier, k = 3, border = 2:5) # add rectangles with colors
-```
-
-Similarly to Kmean, hierarchical clusters tell different stories as seen in the cluster means below:
-
-```{r, Hierarchical_stories, message = FALSE}
-hierCluster1data = happiness[which(happiness$HierCluster == 1),5:11]
-hierCluster2data = happiness[which(happiness$HierCluster == 2),5:11]
-hierCluster3data = happiness[which(happiness$HierCluster == 3),5:11]
-
-# Column Means
-Cluster_1 = colMeans(hierCluster1data)
-Cluster_2 = colMeans(hierCluster2data)
-Cluster_3 = colMeans(hierCluster3data)
-
-happiness_hier_ClusterSummary = as.data.frame(rbind(Cluster_1,Cluster_2,Cluster_3))
-
-happiness_hier_ClusterSummary$ClusterID <- as.factor(rownames(happiness_hier_ClusterSummary))
-
-happiness_hier_ClusterSummaryPlot <- melt(happiness_hier_ClusterSummary,id = "ClusterID")
-
-happiness_hier_ClusterSummary <- happiness_hier_ClusterSummary[c(8,1:7)]
-
-ggplotly(ggplot(data = happiness_hier_ClusterSummaryPlot, aes(x = variable, y = value, group = ClusterID, colour = ClusterID)) + geom_line())
-
-```
-
-The cluster means are tabulated below:
-
-
-```{r}
-
-kable(happiness_hier_ClusterSummary, caption = "Happiness Hierarchical Cluster Means")
-
-```
-
-
-Hierarchical clustering tells the same story as Kmeans clustering. There are countries that come overall on top in terms of happiness and well being. Other countries are average. Others rank lowly in all the happiness characteristics. 
-
-Below are the countries in Cluster 3
-
-```{r}
-happiness_hiercluster3 = happiness[which(happiness$HierCluster ==3),c(1,16)]
-datatable(happiness_hiercluster3)
-
-```
-
-Below are the countries in Cluster 1
-
-```{r}
-happiness_hiercluster1 = happiness[which(happiness$HierCluster ==1),c(1,16)]
-datatable(happiness_hiercluster1)
-
-```
-
-
-Overlaying the hierarchical clusters on to a World Map you can see that the way clustering characterized the countries makes sense:
-
-
-```{r map_visualization, message = FALSE}
-
-map_world = map_data("world")
-
-happiness$Country[c(18,75,77,78,122)] <- c("UK", "USA", "Republic of Congo", "Democratic Republic of the Congo", "Palestine")
-
-happiness$HierCluster %<>% as.factor %>% plyr::mapvalues(c(1,2,3), c("Mid", "Bottom", "Top"))
-
-map_world_joined <- left_join(map_world,happiness, by = c('region' = 'Country'))
-
-ggplot() + geom_polygon(data = map_world_joined, aes(x = long, y = lat, group = group, fill=HierCluster), color = "#000000") 
-
-```
-
 
 ## Linear Discriminant Analysis (LDA)
 
@@ -568,8 +300,7 @@ SVM is able to capture complex hyperplane boundries using non-linear kernels, bu
 ### Examples
 
 ```{r}
-library('e1071')
-model <- svm(y~., trainset, scale=F, kernel = "polynomial")
+model <- e1071::svm(y~., trainset, scale=F, kernel = "polynomial")
 res <- predict(model, newdata=testset)
 
 RRhelpr::printClassificationTable(testset$y,res,"SVM")
@@ -847,6 +578,232 @@ print(df_confusion)
 
 # Unsupervised Learning
 Unsupervised learning takes a dataset and trys to fit classes to it. The focus is on the data and how it forms classes rather than how classes divide the data.
+## K Means Clustering
+
+### Theory
+
+### Results using the NIMST Data
+
+```{r Kmeansclustering}
+##K MEANS CLUSTERING
+nclusters = 3
+
+trainsetkclus <- stats::kmeans(unlabeled,nclusters,nstart = 20)
+
+plot_ly(as.data.frame(modpca$x), x=~PC1, y=~PC2, type = "scatter", color = as.factor(trainset$y))
+```
+
+
+
+### Demonstration using a Different Dataset, World Happiness 2016
+
+K-means Clustering can be better illustrated with a different dataset. An example below is provided using happiness data from the 2016 World Happiness report.
+
+
+```{r Data, echo= FALSE,results='hide', message = FALSE}
+happiness_raw <- read.csv('happiness/happiness.csv')
+happiness_std <- scale(happiness_raw[5:11], center = TRUE, scale = TRUE)
+happiness2 = cbind(happiness_raw[1:4], happiness_std)
+happiness = happiness2
+
+myheaders = colnames(happiness)
+
+#Shorten Variable Names
+myheaders[1] = "Country"
+myheaders[5] = "Econ"
+myheaders[7] = "Health"
+myheaders [9] = "Govt_Trust"
+myheaders [10] = "Giving"
+myheaders [11] = "Dystopia_Res"
+colnames(happiness) <- myheaders
+# test = colnames(happiness)
+
+# PCA analysis just so we can overlay clustering results for visualization
+happiness_pca <- stats::prcomp(happiness[5:11], center = TRUE, scale. = TRUE)
+happiness_proportion_pca = happiness_pca$sdev^2/sum(happiness_pca$sdev^2)
+happiness$PC1 = happiness_pca$x[,1]
+happiness$PC2 = happiness_pca$x[,2]
+happiness$PC3 = happiness_pca$x[,3]
+
+##K MEANS CLUSTERING
+nclusters = 3
+happiness_kclus <- kmeans(happiness[5:11],nclusters,nstart = 20)
+happiness$Kclus = happiness_kclus$cluster
+happiness_kclus$KCluster = as.factor(happiness_kclus$cluster)
+
+happiness_K_ClusterSummary <- as.data.frame(happiness_kclus$centers)
+
+#Overlay Cluster means
+
+# happiness_K_ClusterSummary$ClusterID <- as.factor(rownames(happiness_K_ClusterSummary))
+
+# adding the word cluster to the cluster IDs
+happiness_K_ClusterSummary$ClusterID <- paste("Cluster",rownames(happiness_K_ClusterSummary) , sep="_")
+
+happiness_K_ClusterSummary <- happiness_K_ClusterSummary[c(8,1:7)]
+
+happiness_ClusterSummaryPlot <- melt(happiness_K_ClusterSummary,id = "ClusterID")
+
+# plot(happiness$Econ)
+# plot(happiness2$Econ)
+
+```
+
+
+Each cluster tells a different story as explained by the cluster means explained below:
+
+
+
+```{r}
+knitr::kable(happiness_K_ClusterSummary, caption = "Happiness Data Kmean Cluster Means")
+```
+
+```{r}
+ggplotly(ggplot(data = happiness_ClusterSummaryPlot, aes(x = variable, y = value, group = ClusterID, colour = ClusterID)) + geom_line())
+```
+
+The cluster data can be visualized in 2-dimensional space by color coding the individual values of PC1 and PC2 for each record, as shown below. (For this example, PCA is only calculated to overlay clusters on it)
+
+
+```{r Kclusters_on_PCA, message = FALSE}
+happiness_plotme2 <- ggplot(data = as.data.frame(happiness_pca$x[,1:2]), aes(x = PC1, y = PC2)) +
+  geom_point(size = 2) + geom_point(aes(colour = as.factor(happiness$Kclus))) +
+  labs(x = paste("PC1 (",scales::percent(happiness_proportion_pca[1]), " explained var.)",sep = ""),
+       y = paste("PC2 (", scales::percent(happiness_proportion_pca[2]), " explained var.)", sep = ""))
+
+ggplotly(happiness_plotme2)
+```
+
+Similarly, overlaid on 3 dimensional space the cluster separation can be observed
+
+```{r Kmeans3D, message = FALSE}
+plot_ly(happiness, x = ~PC1, y = ~PC2, z = ~PC3, color = as.factor(happiness$Kclus), colors = c('red', 'blue', 'green'))
+```
+
+
+We can form some tangible conclusions from the countries that were placed in each of the clusters. Under cluster 1 which overall defines the "worse off countries" we can find:
+
+
+```{r}
+happiness_cluster2 = happiness[which(happiness$Kclus ==1),c(1,15)]
+datatable(happiness_cluster2)
+```
+
+
+Under cluster 3, which encompasses the "better countries" we can find:
+
+```{r}
+happiness_cluster3 = happiness[which(happiness$Kclus ==3),c(1,15)]
+datatable(happiness_cluster3)
+```
+
+Cluster 2 contains the average countries, so the list of those countries is not as interesting.
+
+
+## Hierarchical Clustering 
+
+### Theory
+
+Similar to Kmeans, Hierarchical Clustering aims to separate the data based on similarities in each of the variables for each reacord. Hierarchical Clustering, unlike Kmeans, uses Euclidean distance to determine how far away points are in the multidimensional space and it then optimizes the clusters members in a way that their Euclidean distance is minimized. 
+
+Hierarchical clustering is a form of unsupervised machine learning that aims to distinguish types of classes within a multivariate dataset. It takes all the records for all the variables and calculates distances between the points in the multidimensional space. Several techniques for calculating these distances are available but the most common is Euclidean Distance.
+
+Hierarchical clusters can be built up from the ground up (agglomerative), or decomposed from the top down (divisive). Divisive places all points in one cluster and on each iteration the cluster is split based on the member distances. The agglomerative approach starts out with one cluster for each point and begins merging points on each iteration.
+
+Different methods of "linkage" exist to compare the distances between the points and/or clusters. The main ones are:
+- Complete
+- Ward
+- Average
+- Centroid
+
+Each method has pros and cons to account for outliers. 
+
+### Example using World Happiness Data 2016
+
+For a dataset with n number of records up to n clusters may exist. However, choosing an excessively large amount of cluster numbers will be counterproductive as there would exist just a few members in each cluster if there is a large amount of clusters.
+
+A dendogram is an illustration of the breakdown of the clustering based on the Euclidean distances. In this case, three clusters are chosen to characterize the data. A scree plot can be generated from the dendogram to help visualize the magnitude of the distance traveled to make a new clusters. As the distance decreases, points closeby are becoming individual clusters, therefore, the optimal number of points is right after the largest drop-off. This is called the elbow of the scree plot. 
+
+The dendogram for this dataset is shown below, with a color-coded border for the three different clusters identified. In this case, the ward linkage method was used, along with Euclidean distance.
+
+```{r Hierarchical_Clustering, message = FALSE}
+# method = "complete"
+method = "ward.D"
+happiness_clusters_hier <- stats::hclust(dist((happiness[,5:11]), method = "euclidean"), method = method)
+plot(happiness_clusters_hier, cex = 0.6)
+
+# Cut tree into 3 groups
+grp <- stats::cutree(happiness_clusters_hier, k = 3)
+happiness$HierCluster = grp
+
+# # Visualize
+# plot(res.hc, cex = 0.6) # plot tree
+stats::rect.hclust(happiness_clusters_hier, k = 3, border = 2:5) # add rectangles with colors
+```
+
+Similarly to Kmean, hierarchical clusters tell different stories as seen in the cluster means below:
+
+```{r, Hierarchical_stories, message = FALSE}
+hierCluster1data = happiness[which(happiness$HierCluster == 1),5:11]
+hierCluster2data = happiness[which(happiness$HierCluster == 2),5:11]
+hierCluster3data = happiness[which(happiness$HierCluster == 3),5:11]
+
+# Column Means
+Cluster_1 = colMeans(hierCluster1data)
+Cluster_2 = colMeans(hierCluster2data)
+Cluster_3 = colMeans(hierCluster3data)
+
+happiness_hier_ClusterSummary = as.data.frame(rbind(Cluster_1,Cluster_2,Cluster_3))
+
+happiness_hier_ClusterSummary$ClusterID <- as.factor(rownames(happiness_hier_ClusterSummary))
+
+happiness_hier_ClusterSummaryPlot <- melt(happiness_hier_ClusterSummary,id = "ClusterID")
+
+happiness_hier_ClusterSummary <- happiness_hier_ClusterSummary[c(8,1:7)]
+
+ggplotly(ggplot(data = happiness_hier_ClusterSummaryPlot, aes(x = variable, y = value, group = ClusterID, colour = ClusterID)) + geom_line())
+```
+
+The cluster means are tabulated below:
+
+
+```{r}
+kable(happiness_hier_ClusterSummary, caption = "Happiness Hierarchical Cluster Means")
+```
+
+
+Hierarchical clustering tells the same story as Kmeans clustering. There are countries that come overall on top in terms of happiness and well being. Other countries are average. Others rank lowly in all the happiness characteristics. 
+
+Below are the countries in Cluster 3
+
+```{r}
+happiness_hiercluster3 = happiness[which(happiness$HierCluster ==3),c(1,16)]
+datatable(happiness_hiercluster3)
+```
+
+Below are the countries in Cluster 1
+
+```{r}
+happiness_hiercluster1 = happiness[which(happiness$HierCluster ==1),c(1,16)]
+datatable(happiness_hiercluster1)
+```
+
+
+Overlaying the hierarchical clusters on to a World Map you can see that the way clustering characterized the countries makes sense:
+
+
+```{r map_visualization, message = FALSE}
+map_world = map_data("world")
+
+happiness$Country[c(18,75,77,78,122)] <- c("UK", "USA", "Republic of Congo", "Democratic Republic of the Congo", "Palestine")
+
+happiness$HierCluster %<>% as.factor %>% plyr::mapvalues(c(1,2,3), c("Mid", "Bottom", "Top"))
+
+map_world_joined <- left_join(map_world,happiness, by = c('region' = 'Country'))
+
+ggplot() + geom_polygon(data = map_world_joined, aes(x = long, y = lat, group = group, fill=HierCluster), color = "#000000") 
+```
+
 
 # Ensemble Techniques
 Ensemble techniques are used to combine multiple models to create enhance results that ought to be more accurate and less biased. They can be used with most methods, and even with combinations of methods.
