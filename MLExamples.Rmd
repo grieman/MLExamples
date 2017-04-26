@@ -1,64 +1,62 @@
 ---
 title: "Machine Learning Techniques"
-author: "Graeham Rieman"
+author: "Sam Gonzalez & Graeham Rieman"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
   html_document:
-    toc: true
+    keep_md: yes
+    toc: yes
     toc_depth: 2
     toc_float:
-      collapsed: false
-      smooth_scroll: true
+      collapsed: no
       depth: 2
+      smooth_scroll: yes
 ---
 
-```{r setup}
+```{r setup, include=FALSE}
 installnload_packages <- function(packages){
   packages.new <- packages[!(packages %in% installed.packages()[,"Package"])]
   if(length(packages.new)) install.packages(packages.new)
   for (i in 1:length(packages)) {temp <- packages[i]; library(temp, character.only = T)}
 }
 
-used_packages <- c("magrittr", "ggplot2", "feather","plotly", "MASS","dplyr","reshape2","readr","lubridate","cluster","fpc","scales","knitr","gtable","data.table","DT","e1071","class","rpart","rpart.plot","nnet")
+used_packages <- c("magrittr", "ggplot2", "feather","plotly", "MASS","dplyr","reshape2","readr","lubridate","cluster","fpc","scales","knitr","gtable","data.table","DT","e1071","class","rpart","rpart.plot","nnet",'maps')
 
 installnload_packages(used_packages)
 
-library (RRhelpr)
+library (RRhelpr) #this is hosted on gitlab, so must be installed seperately
 
-
-load_mnist <- function() {
-  load_image_file <- function(filename) {
-    ret = list()
-    f = file(filename,'rb')
-    readBin(f,'integer',n=1,size=4,endian='big')
-    ret$n = readBin(f,'integer',n=1,size=4,endian='big')
-    nrow = readBin(f,'integer',n=1,size=4,endian='big')
-    ncol = readBin(f,'integer',n=1,size=4,endian='big')
-    x = readBin(f,'integer',n=ret$n*nrow*ncol,size=1,signed=F)
-    ret$x = matrix(x, ncol=nrow*ncol, byrow=T)
-    close(f)
-    ret
-  }
-  load_label_file <- function(filename) {
-    f = file(filename,'rb')
-    readBin(f,'integer',n=1,size=4,endian='big')
-    n = readBin(f,'integer',n=1,size=4,endian='big')
-    y = readBin(f,'integer',n=n,size=1,signed=F)
-    close(f)
-    y
-  }
-  train <<- load_image_file('mnist/train-images.idx3-ubyte')
-  test <<- load_image_file('mnist/t10k-images.idx3-ubyte')
-  
-  train$y <<- load_label_file('mnist/train-labels.idx1-ubyte')
-  test$y <<- load_label_file('mnist/t10k-labels.idx1-ubyte')  
+load_image_file <- function(filename) {
+  ret = list()
+  f = file(filename,'rb')
+  readBin(f,'integer',n=1,size=4,endian='big')
+  ret$n = readBin(f,'integer',n=1,size=4,endian='big')
+  nrow = readBin(f,'integer',n=1,size=4,endian='big')
+  ncol = readBin(f,'integer',n=1,size=4,endian='big')
+  x = readBin(f,'integer',n=ret$n*nrow*ncol,size=1,signed=F)
+  ret$x = matrix(x, ncol=nrow*ncol, byrow=T)
+  close(f)
+  ret
 }
+load_label_file <- function(filename) {
+  f = file(filename,'rb')
+  readBin(f,'integer',n=1,size=4,endian='big')
+  n = readBin(f,'integer',n=1,size=4,endian='big')
+  y = readBin(f,'integer',n=n,size=1,signed=F)
+  close(f)
+  y
+}
+
+train <- load_image_file('mnist/train-images.idx3-ubyte')
+test <- load_image_file('mnist/t10k-images.idx3-ubyte')
+  
+train$y <- load_label_file('mnist/train-labels.idx1-ubyte')
+test$y <- load_label_file('mnist/t10k-labels.idx1-ubyte')  
 
 show_digit <- function(arr784, col=gray(12:1/12), ...) {
   image(matrix(unlist(arr784), nrow=28)[,28:1], col=col, ...)
 }
 
-load_mnist()
 
 trainset <- as.data.frame(train$x);trainset$y <- as.factor(train$y)
 testset <- as.data.frame(test$x);testset$y <- as.factor(test$y)
@@ -114,7 +112,7 @@ w_{(1)} = \text{arg max } \frac{w^T X^T X w}{w^T w} = \text{ eigenvector}_{(1)} 
 
 PCA Analysis is conducted and the Eigen Values and Eigen Vectors are generated. A "scree plot" shows the percent of the variance explained by each Principal Component (28 in total). It indicates how much you should trust any one component, based on how variance they explain. The later PCs usually tend to explain noise in the data so it is not as valuable to interpret them. Below is a picture of the scree plot. Within the scree plot the goal is to find the "elbow" which is usually a good indication that the PCs up to that point explain most of the variance in the data. In this case, three PCs seems to explain the data well, although they collectively only explain about 35% of the data. 
 
-```{r, PCA r}
+```{r PCA r}
 #Data has been loaded above
 
 #function: prcomp from the stats package. The stats package is installed by default
@@ -131,7 +129,7 @@ plot(prop.pca[1:28])
 ```{python, PCA python}
 import feather, os
 import pandas as pd
-from sklearn.decomposition import RandomizedPCA
+from sklearn.decomposition import PCA
 import seaborn as sns
 
 path = os.getcwd()
@@ -144,7 +142,7 @@ lbls = train['y']
 imgs = train.drop('y', 1)
 
 # train model
-pca = RandomizedPCA(n_components=2)
+pca = PCA(n_components=2, svd_solver='randomized')
 X = pca.fit_transform(imgs)
 
 # form DataFrame and rename columns
@@ -163,7 +161,7 @@ sns.lmplot('PC1', 'PC2', data=X, hue='class', fit_reg=False).savefig(plotpath)
 
 Each PC explains some essence in the data. As seen from the eigenvectors above and the plots below show what is captured by the principal components (only PC1 through PC4 below). Each captures a different "story" and they only account for `r prop.pca[1:3]`, and `r prop.pca[4]` percent of the variation in the data. Althought they are not precisely recognizable as numbers there appear to be groups of curves that make up the digits. PC1 seems to show data that looks like a (nine), while PC2 is a little more unclear in that it shows data that could be a 9, a 4 or a 1. PC3 shows data that could be a 9. 
 
-```{r, PCs}
+```{r PCs}
 #plot eigenvectors
 par(mfrow=c(2,2))
 show_digit(modpca$rotation[,1],axes=FALSE)
@@ -175,8 +173,8 @@ par(mfrow=c(1,1))
 
 Since each observation is made up of a combination of these Principle Components, we would expect the zeros to have high PC1 values, which we see is true by this plot below, with PC1 on the x-axis and PC2 on the y-axis. However, most of the classes are hard to separate.
 
-```{r, PCA plot}
-plot_ly(as.data.frame(modpca$x), x=~PC1, y=~PC2, z=~PC3, color = as.factor(trainset$y), type = 'scatter3d')
+```{r PCA plot}
+plot_ly(as.data.frame(modpca$x), x=~PC1, y=~PC2, z=~PC3, color = as.factor(trainset$y), type = 'scatter3d', mode='markers')
 ```
 
 Similarly, this is the plot that the above python code generated:
@@ -219,7 +217,7 @@ In the example below LDA will be used to predict #of cylinders (classes) based o
 
 #### R
 
-```{r}
+```{r LDA}
 data_LDA = mtcars
 
 trainindex = 1:((dim(data_LDA)[1]/5)*4)
@@ -299,7 +297,7 @@ SVM is able to capture complex hyperplane boundries using non-linear kernels, bu
 
 ### Examples
 
-```{r}
+```{r SVM}
 model <- e1071::svm(y~., trainset, scale=F, kernel = "polynomial")
 res <- predict(model, newdata=testset)
 
@@ -348,7 +346,7 @@ KNN is often used because it is easy to explain, and it is most often used when 
 ### Examples
 
 #### R
-```{r, KNN}
+```{r KNN}
 modknn <- class::knn(trainset[-c(785)], testset[-c(785)], trainset$y,k=3)
 pred <- as.numeric(levels(modknn))[modknn]
 RRhelpr::printClassificationTable(testset$y,modknn,"KNN")
@@ -385,7 +383,7 @@ print(df_confusion)
 ### KNN on PCA
 As discussed above, KNN can be used on the reduced-dimension set output by PCA. This ought to reduce the running time, as there are fewer columns to consider, and increase the accuracy, since these columns correspond to the principle components.
 
-```{r, KNN on PCA}
+```{r KNN on PCA}
 test_pca <- predict(modpca, testset)
 prediction_pca <- class::knn(modpca$x[,1:28], test_pca[,1:28], trainset$y, k=3)
 RRhelpr::printClassificationTable(testset$y,prediction_pca,"KNN fitted on the above PCA transformation")
@@ -405,7 +403,8 @@ $$ I_G (f) = \sum_{i=1}^{J} f_i (1-f_i) = 1 - \sum_{i=1}^{J} f_i^2 = \sum_{i \ne
 ### Information Gain
 Information gain ought to be optimized - it compares the distribution of observations in the parent leaf to the distributions in the child leaves using the following formula:
 
-$$ IG(T,x) =  H(T) - H(T|x) \text{ where } H(s) = - \sum_{i=1}^{J} p_i log_2 (p_i) \text{ and } p_i = \text{percentage of class } i \text{ in a leaf} $$
+$$ IG(T,x) =  H(T) - H(T|x) 
+\\ \text{ where } H(s) = - \sum_{i=1}^{J} p_i log_2 (p_i) \text{ and } p_i = \text{percentage of class } i \text{ in a leaf} $$
 
 Although these are seperate measures, they almost always produce the same results, so either or both could be tried in most cases.
 
@@ -415,7 +414,7 @@ Some of the greatest strengths of decision trees are simplicity and ease of use.
 ### Examples
 
 #### R
-```{r, tree}
+```{r tree}
 modtree <- rpart::rpart(y ~., data = trainset, control = rpart::rpart.control(cp=.0005)) #cp = minimum gain in fit at each split
 preds <- predict(modtree, testset,type="class")
 
@@ -474,7 +473,7 @@ Neural networks may be most useful with complex data which do not have an obviou
 
 #### R
 
-```{r}
+```{r ANN}
 n <- names(trainset[-c(785)])
 formula <- stats::as.formula(paste(c("y", paste(n, collapse = " + ")),collapse = " ~ "))
 
@@ -534,13 +533,13 @@ $$
 P(x_1=4) &= P(x_1=4|(1,1)=\alpha) + P(x_1=4|(1,2) = \beta) + P(x_1=4|(1,3)=\gamma)+ ... + P(x_1=4|(28,28)=\omega) && \alpha, \beta, \gamma, ...\omega \in (0, 255)
 \\       &= \frac{P((1,1)=\alpha|x=4)P(x=4)}{P((1,1)=\alpha)} + ... + \frac{P((28,28)=\omega|x=4)P(x=4)}{P((28,28)=\omega)}  && \text{Using Bayes Theorem}
 \\       &= \frac{P((1,1)=\alpha|x=4) \times .458}{P((1,1)=\alpha)} + ... + \frac{P((28,28)=\omega|x=4) \times .458}{P((28,28)=\omega)}  && \text{P(x=4) =} \frac{982}{2144}
-\\ & \text{With the calculations left to the model, this simplifies to 1.}
+\\ & \text{With the calculations left to the model, this simplifies to a number very close to 1 for this first point.}
 \end{align}
 $$
 
 #### R
 
-```{r}
+```{r bayes}
 modbayes <- e1071::naiveBayes(y ~., data = trainset)
 preds <- predict(modbayes, testset[-c(785)], type= "class")
 
@@ -590,7 +589,7 @@ nclusters = 3
 
 trainsetkclus <- stats::kmeans(unlabeled,nclusters,nstart = 20)
 
-plot_ly(as.data.frame(modpca$x), x=~PC1, y=~PC2, type = "scatter", color = as.factor(trainset$y))
+plot_ly(as.data.frame(modpca$x), x=~PC1, y=~PC2, type = "scatter", color = as.factor(trainset$y), mode='markers')
 ```
 
 
@@ -795,13 +794,15 @@ Overlaying the hierarchical clusters on to a World Map you can see that the way 
 ```{r map_visualization, message = FALSE}
 map_world = map_data("world")
 
-happiness$Country[c(18,75,77,78,122)] <- c("UK", "USA", "Republic of Congo", "Democratic Republic of the Congo", "Palestine")
+happiness$Country %<>% as.character()
 
-happiness$HierCluster %<>% as.factor %>% plyr::mapvalues(c(1,2,3), c("Mid", "Bottom", "Top"))
+happiness$Country[c(23,13,125,127,108)] <- c("UK", "USA", "Republic of Congo", "Democratic Republic of the Congo", "Palestine")
+
+happiness$HierCluster %<>% as.factor %>% plyr::mapvalues(c(1,2,3), c("Top", "Mid", "Bottom"))
 
 map_world_joined <- left_join(map_world,happiness, by = c('region' = 'Country'))
 
-ggplot() + geom_polygon(data = map_world_joined, aes(x = long, y = lat, group = group, fill=HierCluster), color = "#000000") 
+ggplot() + geom_polygon(data = map_world_joined, aes(x = long, y = lat, group = group, fill=HierCluster), color = "#000000") + scale_fill_brewer(type="Diverging", palette = 'RdYlBu', direction=-1, na.value="grey50")
 ```
 
 
