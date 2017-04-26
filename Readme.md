@@ -760,9 +760,6 @@ happiness_cluster3 = happiness[which(happiness$Kclus ==3),c(1,15)]
 datatable(happiness_cluster3)
 ```
 
-<!--html_preserve--><div id="htmlwidget-d758baa75e5ecfdc2244" style="width:100%;height:auto;" class="datatables html-widget"></div>
-<script type="application/json" data-for="htmlwidget-d758baa75e5ecfdc2244">{"x":{"filter":"none","data":[["11","14","15","17","21","24","25","26","27","31","32","34","35","37","38","39","40","41","43","44","45","46","47","48","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","77","78","79","80","81","82","83","85","86","87","88","89","90","91","93","94","95","96","98","99","101","104","105","108","109","112","113","116","117","120","121","123","129","134","137"],["Israel","Costa Rica","Puerto Rico","Brazil","Mexico","Chile","Panama","Argentina","Czech Republic","Colombia","France","Saudi Arabia","Taiwan","Spain","Algeria","Guatemala","Suriname","Kuwait","Trinidad and Tobago","Venezuela","Slovakia","El Salvador","Malaysia","Nicaragua","Italy","Ecuador","Belize","Japan","Kazakhstan","Moldova","Russia","Poland","South Korea","Bolivia","Lithuania","Belarus","North Cyprus","Slovenia","Peru","Turkmenistan","Mauritius","Libya","Latvia","Cyprus","Paraguay","Romania","Estonia","Jamaica","Croatia","Kosovo","Turkey","Indonesia","Jordan","Azerbaijan","Philippines","China","Kyrgyzstan","Serbia","Bosnia and Herzegovina","Montenegro","Dominican Republic","Morocco","Hungary","Lebanon","Portugal","Macedonia","Vietnam","Tunisia","Greece","Mongolia","Honduras","Iran","Palestinian Territories","Albania","Iraq","Namibia","South Africa","Sri Lanka","Egypt","Armenia","Ukraine","Bulgaria","Gabon","Botswana"],[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Country<\/th>\n      <th>Kclus<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":2},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script><!--/html_preserve-->
-
 Cluster 2 contains the average countries, so the list of those countries is not as interesting.
 
 
@@ -864,8 +861,6 @@ happiness_hiercluster3 = happiness[which(happiness$HierCluster ==3),c(1,16)]
 datatable(happiness_hiercluster3)
 ```
 
-<!--html_preserve--><div id="htmlwidget-5f4eb1776c2eeadf31a3" style="width:100%;height:auto;" class="datatables html-widget"></div>
-<script type="application/json" data-for="htmlwidget-5f4eb1776c2eeadf31a3">{"x":{"filter":"none","data":[["76","92","103","106","110","111","114","115","118","124","125","127","128","130","131","132","133","135","136","138","139","141","142","143","144","145","147","148","150","151","153","154","155","157"],["Somalia","Pakistan","Nigeria","Zambia","Bangladesh","Sierra Leone","Cameroon","Ethiopia","India","Ghana","Congo (Kinshasa)","Congo (Brazzaville)","Senegal","Mauritania","Zimbabwe","Malawi","Sudan","Mali","Haiti","Comoros","Ivory Coast","Angola","Niger","South Sudan","Chad","Burkina Faso","Yemen","Madagascar","Liberia","Guinea","Benin","Afghanistan","Togo","Burundi"],[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Country<\/th>\n      <th>HierCluster<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":2},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script><!--/html_preserve-->
 
 Below are the countries in Cluster 1
 
@@ -875,8 +870,6 @@ happiness_hiercluster1 = happiness[which(happiness$HierCluster ==1),c(1,16)]
 datatable(happiness_hiercluster1)
 ```
 
-<!--html_preserve--><div id="htmlwidget-2712e8a001c3e83fad10" style="width:100%;height:auto;" class="datatables html-widget"></div>
-<script type="application/json" data-for="htmlwidget-2712e8a001c3e83fad10">{"x":{"filter":"none","data":[["1","2","3","4","5","6","7","8","9","10","13","19","20","22","23","28","30","36","75"],["Denmark","Switzerland","Iceland","Norway","Finland","Canada","Netherlands","New Zealand","Australia","Sweden","United States","Ireland","Luxembourg","Singapore","United Kingdom","United Arab Emirates","Malta","Qatar","Hong Kong"],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Country<\/th>\n      <th>HierCluster<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":2},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script><!--/html_preserve-->
 
 
 Overlaying the hierarchical clusters on to a World Map you can see that the way clustering characterized the countries makes sense:
