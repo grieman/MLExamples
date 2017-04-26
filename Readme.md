@@ -1,82 +1,21 @@
----
-title: "Machine Learning Techniques"
-author: "Sam Gonzalez & Graeham Rieman"
-date: "`r format(Sys.time(), '%d %B, %Y')`"
-output: 
-  html_document:
-    keep_md: yes
-    toc: yes
-    toc_depth: 2
-    toc_float:
-      collapsed: no
-      depth: 2
-      smooth_scroll: yes
----
-
-```{r setup, include=FALSE}
-installnload_packages <- function(packages){
-  packages.new <- packages[!(packages %in% installed.packages()[,"Package"])]
-  if(length(packages.new)) install.packages(packages.new)
-  for (i in 1:length(packages)) {temp <- packages[i]; library(temp, character.only = T)}
-}
-
-used_packages <- c("magrittr", "ggplot2", "feather","plotly", "MASS","dplyr","reshape2","readr","lubridate","cluster","fpc","scales","knitr","gtable","data.table","DT","e1071","class","rpart","rpart.plot","nnet",'maps')
-
-installnload_packages(used_packages)
-
-library (RRhelpr) #this is hosted on gitlab, so must be installed seperately
-
-load_image_file <- function(filename) {
-  ret = list()
-  f = file(filename,'rb')
-  readBin(f,'integer',n=1,size=4,endian='big')
-  ret$n = readBin(f,'integer',n=1,size=4,endian='big')
-  nrow = readBin(f,'integer',n=1,size=4,endian='big')
-  ncol = readBin(f,'integer',n=1,size=4,endian='big')
-  x = readBin(f,'integer',n=ret$n*nrow*ncol,size=1,signed=F)
-  ret$x = matrix(x, ncol=nrow*ncol, byrow=T)
-  close(f)
-  ret
-}
-load_label_file <- function(filename) {
-  f = file(filename,'rb')
-  readBin(f,'integer',n=1,size=4,endian='big')
-  n = readBin(f,'integer',n=1,size=4,endian='big')
-  y = readBin(f,'integer',n=n,size=1,signed=F)
-  close(f)
-  y
-}
-
-train <- load_image_file('mnist/train-images.idx3-ubyte')
-test <- load_image_file('mnist/t10k-images.idx3-ubyte')
-  
-train$y <- load_label_file('mnist/train-labels.idx1-ubyte')
-test$y <- load_label_file('mnist/t10k-labels.idx1-ubyte')  
-
-show_digit <- function(arr784, col=gray(12:1/12), ...) {
-  image(matrix(unlist(arr784), nrow=28)[,28:1], col=col, ...)
-}
+# Machine Learning Techniques
+Sam Gonzalez & Graeham Rieman  
+`r format(Sys.time(), '%d %B, %Y')`  
 
 
-trainset <- as.data.frame(train$x);trainset$y <- as.factor(train$y)
-testset <- as.data.frame(test$x);testset$y <- as.factor(test$y)
-
-trainset %<>% subset(y %in% c("1","4","9")) %>% droplevels
-testset %<>% subset(y %in% c("1","4","9")) %>% droplevels
-
-write_feather(trainset, "trainset.feather")
-write_feather(testset, "testset.feather")
-```
 
 
 # Data
 
 ## NIMST dataset
-We use a subset of the [MNIST handwritten digits dataset](http://yann.lecun.com/exdb/mnist/) to demonstrate the concept of PCA. The NIMST dataset contains "pictures" of handwritten digits from 0 to 9. The "picture" for each of these numbers is stored in a 28 x 28 matrix containing a total of 784 pixels. Each "pixel" is a black/white value with a range of 0 to 255. When plotted in a heatmap style, the darker/light contrast reveals the picture of the number. The first element of our set (labelled as a `r trainset$y[1]`) looks like this:
+We use a subset of the [MNIST handwritten digits dataset](http://yann.lecun.com/exdb/mnist/) to demonstrate the concept of PCA. The NIMST dataset contains "pictures" of handwritten digits from 0 to 9. The "picture" for each of these numbers is stored in a 28 x 28 matrix containing a total of 784 pixels. Each "pixel" is a black/white value with a range of 0 to 255. When plotted in a heatmap style, the darker/light contrast reveals the picture of the number. The first element of our set (labelled as a 4) looks like this:
 
-```{r, shownum}
+
+```r
 show_digit(trainset[1, 1:784])
 ```
+
+![](MLExamples_files/figure-html/shownum-1.png)<!-- -->
 
 ## Subset of NIMST dataset
 For this example we subset the original NIMST data to contain only pictures of digits 1, 4 and 9. The last column is a label for the number, but it is not used in the analysis. 
@@ -112,7 +51,8 @@ w_{(1)} = \text{arg max } \frac{w^T X^T X w}{w^T w} = \text{ eigenvector}_{(1)} 
 
 PCA Analysis is conducted and the Eigen Values and Eigen Vectors are generated. A "scree plot" shows the percent of the variance explained by each Principal Component (28 in total). It indicates how much you should trust any one component, based on how variance they explain. The later PCs usually tend to explain noise in the data so it is not as valuable to interpret them. Below is a picture of the scree plot. Within the scree plot the goal is to find the "elbow" which is usually a good indication that the PCs up to that point explain most of the variance in the data. In this case, three PCs seems to explain the data well, although they collectively only explain about 35% of the data. 
 
-```{r PCA r}
+
+```r
 #Data has been loaded above
 
 #function: prcomp from the stats package. The stats package is installed by default
@@ -124,9 +64,12 @@ prop.pca <- modpca$sdev^2/sum(modpca$sdev^2)
 plot(prop.pca[1:28])
 ```
 
+![](MLExamples_files/figure-html/PCA r-1.png)<!-- -->
+
 ### Python
 
-```{python, PCA python}
+
+```python
 import feather, os
 import pandas as pd
 from sklearn.decomposition import PCA
@@ -159,21 +102,28 @@ sns.lmplot('PC1', 'PC2', data=X, hue='class', fit_reg=False).savefig(plotpath)
 
 ## Results
 
-Each PC explains some essence in the data. As seen from the eigenvectors above and the plots below show what is captured by the principal components (only PC1 through PC4 below). Each captures a different "story" and they only account for `r prop.pca[1:3]`, and `r prop.pca[4]` percent of the variation in the data. Althought they are not precisely recognizable as numbers there appear to be groups of curves that make up the digits. PC1 seems to show data that looks like a (nine), while PC2 is a little more unclear in that it shows data that could be a 9, a 4 or a 1. PC3 shows data that could be a 9. 
+Each PC explains some essence in the data. As seen from the eigenvectors above and the plots below show what is captured by the principal components (only PC1 through PC4 below). Each captures a different "story" and they only account for 0.2034138, 0.0926872, 0.075171, and 0.0562521 percent of the variation in the data. Althought they are not precisely recognizable as numbers there appear to be groups of curves that make up the digits. PC1 seems to show data that looks like a (nine), while PC2 is a little more unclear in that it shows data that could be a 9, a 4 or a 1. PC3 shows data that could be a 9. 
 
-```{r PCs}
+
+```r
 #plot eigenvectors
 par(mfrow=c(2,2))
 show_digit(modpca$rotation[,1],axes=FALSE)
 show_digit(modpca$rotation[,2],axes=FALSE)
 show_digit(modpca$rotation[,3],axes=FALSE)
 show_digit(modpca$rotation[,4],axes=FALSE)
+```
+
+![](MLExamples_files/figure-html/PCs-1.png)<!-- -->
+
+```r
 par(mfrow=c(1,1))
 ```
 
 Since each observation is made up of a combination of these Principle Components, we would expect the zeros to have high PC1 values, which we see is true by this plot below, with PC1 on the x-axis and PC2 on the y-axis. However, most of the classes are hard to separate.
 
-```{r PCA plot}
+
+```r
 plot_ly(as.data.frame(modpca$x), x=~PC1, y=~PC2, z=~PC3, color = as.factor(trainset$y), type = 'scatter3d', mode='markers')
 ```
 
@@ -217,7 +167,8 @@ In the example below LDA will be used to predict #of cylinders (classes) based o
 
 #### R
 
-```{r LDA}
+
+```r
 data_LDA = mtcars
 
 trainindex = 1:((dim(data_LDA)[1]/5)*4)
@@ -234,15 +185,25 @@ data_LDA$carnames = rownames(data_LDA)
 data_LDA$traintest <- ifelse(data_LDA$carnames %in% rownames(train_lda),"#004990","#a7a9ac")
 
 data_LDA$PredictedClass
+```
 
+```
+##  [1] "6" "6" "4" "6" "8" "6" "8" "4" "4" "6" "6" "8" "8" "8" "8" "8" "8"
+## [18] "4" "4" "4" "4" "8" "8" "8" "8" "4" "4" "6" "8" "6" "8" "4"
+```
+
+```r
 ggplot(data_LDA, aes(x = carnames)) + 
   geom_point(aes(y = cyl, colour = "Actual #Cyl"), shape = 1, size = 5 ) +
   geom_point(aes(y = as.numeric(PredictedClass), colour = "Classified #Cyl"), shape = 4, size = 5 ) +
   theme(axis.text.x = element_text(angle = 70, hjust = 1, color = data_LDA$traintest[order(data_LDA$carnames)]))
 ```
 
+![](MLExamples_files/figure-html/LDA-1.png)<!-- -->
+
 #### Python
-```{python}
+
+```python
 import feather, os
 import pandas as pd
 import numpy as np
@@ -268,6 +229,17 @@ clf.score(imgs, lbls)
 predictions = clf.predict(imgs_test)
 df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
 print(df_confusion)
+```
+
+```
+## C:\ANACON~1\lib\site-packages\sklearn\discriminant_analysis.py:387: UserWarning: Variables are collinear.
+##   warnings.warn("Variables are collinear.")
+## col_0     1    4    9   All
+## y                          
+## 1      1129    4    2  1135
+## 4         4  948   30   982
+## 9        12   46  951  1009
+## All    1145  998  983  3126
 ```
 
 
@@ -297,14 +269,26 @@ SVM is able to capture complex hyperplane boundries using non-linear kernels, bu
 
 ### Examples
 
-```{r SVM}
+
+```r
 model <- e1071::svm(y~., trainset, scale=F, kernel = "polynomial")
 res <- predict(model, newdata=testset)
 
 RRhelpr::printClassificationTable(testset$y,res,"SVM")
 ```
 
-```{python}
+```
+##          observed
+## predicted    1    4    9  Sum
+##       1   1134    0    6 1140
+##       4      1  971   11  983
+##       9      0   11  992 1003
+##       Sum 1135  982 1009 3126
+## [1] "This SVM misclassifies 0.93 % of the test data"
+```
+
+
+```python
 import feather, os
 import pandas as pd
 from sklearn import svm
@@ -332,6 +316,15 @@ df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
 print(df_confusion)
 ```
 
+```
+## col_0     1    4     9   All
+## y                           
+## 1      1135    0     0  1135
+## 4         0  971    11   982
+## 9         6   11   992  1009
+## All    1141  982  1003  3126
+```
+
 ## K-Nearest Neighbors
 
 ### Theory
@@ -346,15 +339,27 @@ KNN is often used because it is easy to explain, and it is most often used when 
 ### Examples
 
 #### R
-```{r KNN}
+
+```r
 modknn <- class::knn(trainset[-c(785)], testset[-c(785)], trainset$y,k=3)
 pred <- as.numeric(levels(modknn))[modknn]
 RRhelpr::printClassificationTable(testset$y,modknn,"KNN")
 ```
 
+```
+##          observed
+## predicted    1    4    9  Sum
+##       1   1135    6    6 1147
+##       4      0  956    9  965
+##       9      0   20  994 1014
+##       Sum 1135  982 1009 3126
+## [1] "This KNN misclassifies 1.31 % of the test data"
+```
+
 #### Python
 
-```{python}
+
+```python
 import feather, os
 import pandas as pd
 from sklearn.neighbors import KNeighborsClassifier
@@ -380,13 +385,33 @@ df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
 print(df_confusion)
 ```
 
+```
+## col_0     1    4     9   All
+## y                           
+## 1      1135    0     0  1135
+## 4         7  953    22   982
+## 9         7    7   995  1009
+## All    1149  960  1017  3126
+```
+
 ### KNN on PCA
 As discussed above, KNN can be used on the reduced-dimension set output by PCA. This ought to reduce the running time, as there are fewer columns to consider, and increase the accuracy, since these columns correspond to the principle components.
 
-```{r KNN on PCA}
+
+```r
 test_pca <- predict(modpca, testset)
 prediction_pca <- class::knn(modpca$x[,1:28], test_pca[,1:28], trainset$y, k=3)
 RRhelpr::printClassificationTable(testset$y,prediction_pca,"KNN fitted on the above PCA transformation")
+```
+
+```
+##          observed
+## predicted    1    4    9  Sum
+##       1   1134    0    4 1138
+##       4      0  960    8  968
+##       9      1   22  997 1020
+##       Sum 1135  982 1009 3126
+## [1] "This KNN fitted on the above PCA transformation misclassifies 1.12 % of the test data"
 ```
 
 ## Decision Trees
@@ -414,15 +439,33 @@ Some of the greatest strengths of decision trees are simplicity and ease of use.
 ### Examples
 
 #### R
-```{r tree}
+
+```r
 modtree <- rpart::rpart(y ~., data = trainset, control = rpart::rpart.control(cp=.0005)) #cp = minimum gain in fit at each split
 preds <- predict(modtree, testset,type="class")
 
 png("Images\\rpart.png", 3000, 2000)
 rpart.plot::rpart.plot(modtree, extra = 1, fallen.leaves = F)
 dev.off()
+```
 
+```
+## png 
+##   2
+```
+
+```r
 RRhelpr::printClassificationTable(testset$y, preds, "Classifcation Tree")
+```
+
+```
+##          observed
+## predicted    1    4    9  Sum
+##       1   1120    5   12 1137
+##       4      8  930   36  974
+##       9      7   47  961 1015
+##       Sum 1135  982 1009 3126
+## [1] "This Classifcation Tree misclassifies 3.68 % of the test data"
 ```
 
 The r script produces this tree:
@@ -431,7 +474,8 @@ The r script produces this tree:
 
 #### Python
 
-```{python}
+
+```python
 import feather, os
 import pandas as pd
 from sklearn import tree
@@ -457,6 +501,15 @@ df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
 print(df_confusion)
 ```
 
+```
+## col_0     1    4    9   All
+## y                          
+## 1      1121    8    6  1135
+## 4        12  935   35   982
+## 9        14   45  950  1009
+## All    1147  988  991  3126
+```
+
 
 
 ## Neural Networks
@@ -473,7 +526,8 @@ Neural networks may be most useful with complex data which do not have an obviou
 
 #### R
 
-```{r ANN}
+
+```r
 n <- names(trainset[-c(785)])
 formula <- stats::as.formula(paste(c("y", paste(n, collapse = " + ")),collapse = " ~ "))
 
@@ -483,9 +537,20 @@ preds <- predict(modnnet, testset[-c(785)], type= "class")
 RRhelpr::printClassificationTable(testset$y,preds,"ANN")
 ```
 
+```
+##          observed
+## predicted    1    4    9  Sum
+##       1   1131    4    6 1141
+##       4      0  933   50  983
+##       9      4   45  953 1002
+##       Sum 1135  982 1009 3126
+## [1] "This ANN misclassifies 3.49 % of the test data"
+```
+
 
 #### Python
-```{python}
+
+```python
 import feather, os
 import pandas as pd
 from sklearn.neural_network import MLPClassifier #requires 0.18
@@ -509,6 +574,15 @@ mlp.fit(imgs, lbls)
 predictions = mlp.predict(imgs_test)
 df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
 print(df_confusion)
+```
+
+```
+## col_0     1    4     9   All
+## y                           
+## 1      1128    2     5  1135
+## 4         2  952    28   982
+## 9         5   19   985  1009
+## All    1135  973  1018  3126
 ```
 
 
@@ -539,15 +613,27 @@ $$
 
 #### R
 
-```{r bayes}
+
+```r
 modbayes <- e1071::naiveBayes(y ~., data = trainset)
 preds <- predict(modbayes, testset[-c(785)], type= "class")
 
 RRhelpr::printClassificationTable(testset$y,preds,"Bayesian")
 ```
 
+```
+##          observed
+## predicted    1    4    9  Sum
+##       1   1107    3    7 1117
+##       4     10  336   19  365
+##       9     18  643  983 1644
+##       Sum 1135  982 1009 3126
+## [1] "This Bayesian misclassifies 22.39 % of the test data"
+```
+
 #### Python
-```{python}
+
+```python
 import feather, os
 import pandas as pd
 from sklearn.naive_bayes import MultinomialNB
@@ -573,6 +659,15 @@ df_confusion = pd.crosstab(lbls_test, predictions, margins=True)
 print(df_confusion)
 ```
 
+```
+## col_0     1    4     9   All
+## y                           
+## 1      1115   11     9  1135
+## 4         4  786   192   982
+## 9        11   86   912  1009
+## All    1130  883  1113  3126
+```
+
 
 
 # Unsupervised Learning
@@ -583,7 +678,8 @@ Unsupervised learning takes a dataset and trys to fit classes to it. The focus i
 
 ### Results using the NIMST Data
 
-```{r Kmeansclustering}
+
+```r
 ##K MEANS CLUSTERING
 nclusters = 3
 
@@ -593,78 +689,43 @@ plot_ly(as.data.frame(modpca$x), x=~PC1, y=~PC2, type = "scatter", color = as.fa
 ```
 
 
-
 ### Demonstration using a Different Dataset, World Happiness 2016
 
 K-means Clustering can be better illustrated with a different dataset. An example below is provided using happiness data from the 2016 World Happiness report.
 
 
-```{r Data, echo= FALSE,results='hide', message = FALSE}
-happiness_raw <- read.csv('happiness/happiness.csv')
-happiness_std <- scale(happiness_raw[5:11], center = TRUE, scale = TRUE)
-happiness2 = cbind(happiness_raw[1:4], happiness_std)
-happiness = happiness2
 
-myheaders = colnames(happiness)
-
-#Shorten Variable Names
-myheaders[1] = "Country"
-myheaders[5] = "Econ"
-myheaders[7] = "Health"
-myheaders [9] = "Govt_Trust"
-myheaders [10] = "Giving"
-myheaders [11] = "Dystopia_Res"
-colnames(happiness) <- myheaders
-# test = colnames(happiness)
-
-# PCA analysis just so we can overlay clustering results for visualization
-happiness_pca <- stats::prcomp(happiness[5:11], center = TRUE, scale. = TRUE)
-happiness_proportion_pca = happiness_pca$sdev^2/sum(happiness_pca$sdev^2)
-happiness$PC1 = happiness_pca$x[,1]
-happiness$PC2 = happiness_pca$x[,2]
-happiness$PC3 = happiness_pca$x[,3]
-
-##K MEANS CLUSTERING
-nclusters = 3
-happiness_kclus <- kmeans(happiness[5:11],nclusters,nstart = 20)
-happiness$Kclus = happiness_kclus$cluster
-happiness_kclus$KCluster = as.factor(happiness_kclus$cluster)
-
-happiness_K_ClusterSummary <- as.data.frame(happiness_kclus$centers)
-
-#Overlay Cluster means
-
-# happiness_K_ClusterSummary$ClusterID <- as.factor(rownames(happiness_K_ClusterSummary))
-
-# adding the word cluster to the cluster IDs
-happiness_K_ClusterSummary$ClusterID <- paste("Cluster",rownames(happiness_K_ClusterSummary) , sep="_")
-
-happiness_K_ClusterSummary <- happiness_K_ClusterSummary[c(8,1:7)]
-
-happiness_ClusterSummaryPlot <- melt(happiness_K_ClusterSummary,id = "ClusterID")
-
-# plot(happiness$Econ)
-# plot(happiness2$Econ)
-
-```
 
 
 Each cluster tells a different story as explained by the cluster means explained below:
 
 
 
-```{r}
+
+```r
 knitr::kable(happiness_K_ClusterSummary, caption = "Happiness Data Kmean Cluster Means")
 ```
 
-```{r}
+
+
+Table: Happiness Data Kmean Cluster Means
+
+ClusterID          Econ       Family       Health      Freedom   Govt_Trust       Giving   Dystopia_Res
+----------  -----------  -----------  -----------  -----------  -----------  -----------  -------------
+Cluster_1    -1.2559710   -1.0368787   -1.2109988   -0.4449619   -0.0718033    0.1886217     -0.2435997
+Cluster_2     1.1097864    0.9818784    0.9844422    1.1789232    1.4675397    1.0068959      0.0897246
+Cluster_3     0.3310766    0.2522108    0.3467381   -0.1352700   -0.4323883   -0.4269380      0.1045598
+
+
+```r
 ggplotly(ggplot(data = happiness_ClusterSummaryPlot, aes(x = variable, y = value, group = ClusterID, colour = ClusterID)) + geom_line())
 ```
 
 The cluster data can be visualized in 2-dimensional space by color coding the individual values of PC1 and PC2 for each record, as shown below. (For this example, PCA is only calculated to overlay clusters on it)
 
 
-```{r Kclusters_on_PCA, message = FALSE}
+
+```r
 happiness_plotme2 <- ggplot(data = as.data.frame(happiness_pca$x[,1:2]), aes(x = PC1, y = PC2)) +
   geom_point(size = 2) + geom_point(aes(colour = as.factor(happiness$Kclus))) +
   labs(x = paste("PC1 (",scales::percent(happiness_proportion_pca[1]), " explained var.)",sep = ""),
@@ -675,7 +736,8 @@ ggplotly(happiness_plotme2)
 
 Similarly, overlaid on 3 dimensional space the cluster separation can be observed
 
-```{r Kmeans3D, message = FALSE}
+
+```r
 plot_ly(happiness, x = ~PC1, y = ~PC2, z = ~PC3, color = as.factor(happiness$Kclus), colors = c('red', 'blue', 'green'))
 ```
 
@@ -683,7 +745,8 @@ plot_ly(happiness, x = ~PC1, y = ~PC2, z = ~PC3, color = as.factor(happiness$Kcl
 We can form some tangible conclusions from the countries that were placed in each of the clusters. Under cluster 1 which overall defines the "worse off countries" we can find:
 
 
-```{r}
+
+```r
 happiness_cluster2 = happiness[which(happiness$Kclus ==1),c(1,15)]
 datatable(happiness_cluster2)
 ```
@@ -691,7 +754,8 @@ datatable(happiness_cluster2)
 
 Under cluster 3, which encompasses the "better countries" we can find:
 
-```{r}
+
+```r
 happiness_cluster3 = happiness[which(happiness$Kclus ==3),c(1,15)]
 datatable(happiness_cluster3)
 ```
@@ -725,7 +789,8 @@ A dendogram is an illustration of the breakdown of the clustering based on the E
 
 The dendogram for this dataset is shown below, with a color-coded border for the three different clusters identified. In this case, the ward linkage method was used, along with Euclidean distance.
 
-```{r Hierarchical_Clustering, message = FALSE}
+
+```r
 # method = "complete"
 method = "ward.D"
 happiness_clusters_hier <- stats::hclust(dist((happiness[,5:11]), method = "euclidean"), method = method)
@@ -740,9 +805,12 @@ happiness$HierCluster = grp
 stats::rect.hclust(happiness_clusters_hier, k = 3, border = 2:5) # add rectangles with colors
 ```
 
+![](MLExamples_files/figure-html/Hierarchical_Clustering-1.png)<!-- -->
+
 Similarly to Kmean, hierarchical clusters tell different stories as seen in the cluster means below:
 
-```{r, Hierarchical_stories, message = FALSE}
+
+```r
 hierCluster1data = happiness[which(happiness$HierCluster == 1),5:11]
 hierCluster2data = happiness[which(happiness$HierCluster == 2),5:11]
 hierCluster3data = happiness[which(happiness$HierCluster == 3),5:11]
@@ -763,35 +831,52 @@ happiness_hier_ClusterSummary <- happiness_hier_ClusterSummary[c(8,1:7)]
 ggplotly(ggplot(data = happiness_hier_ClusterSummaryPlot, aes(x = variable, y = value, group = ClusterID, colour = ClusterID)) + geom_line())
 ```
 
+
 The cluster means are tabulated below:
 
 
-```{r}
+
+```r
 kable(happiness_hier_ClusterSummary, caption = "Happiness Hierarchical Cluster Means")
 ```
+
+
+
+Table: Happiness Hierarchical Cluster Means
+
+            ClusterID          Econ       Family       Health      Freedom   Govt_Trust       Giving   Dystopia_Res
+----------  ----------  -----------  -----------  -----------  -----------  -----------  -----------  -------------
+Cluster_1   Cluster_1     1.3229200    1.0042290    1.1680120    1.2390222    1.7984937    1.1545428      0.0391320
+Cluster_2   Cluster_2     0.1874385    0.1987464    0.2518928   -0.0046029   -0.2441778   -0.1732234     -0.0308697
+Cluster_3   Cluster_3    -1.3126200   -1.1691169   -1.4232081   -0.6783153   -0.2581439   -0.1153259      0.0725572
 
 
 Hierarchical clustering tells the same story as Kmeans clustering. There are countries that come overall on top in terms of happiness and well being. Other countries are average. Others rank lowly in all the happiness characteristics. 
 
 Below are the countries in Cluster 3
 
-```{r}
+
+```r
 happiness_hiercluster3 = happiness[which(happiness$HierCluster ==3),c(1,16)]
 datatable(happiness_hiercluster3)
 ```
 
+
 Below are the countries in Cluster 1
 
-```{r}
+
+```r
 happiness_hiercluster1 = happiness[which(happiness$HierCluster ==1),c(1,16)]
 datatable(happiness_hiercluster1)
 ```
 
 
+
 Overlaying the hierarchical clusters on to a World Map you can see that the way clustering characterized the countries makes sense:
 
 
-```{r map_visualization, message = FALSE}
+
+```r
 map_world = map_data("world")
 
 happiness$Country %<>% as.character()
@@ -804,6 +889,8 @@ map_world_joined <- left_join(map_world,happiness, by = c('region' = 'Country'))
 
 ggplot() + geom_polygon(data = map_world_joined, aes(x = long, y = lat, group = group, fill=HierCluster), color = "#000000") + scale_fill_brewer(type="Diverging", palette = 'RdYlBu', direction=-1, na.value="grey50")
 ```
+
+![](MLExamples_files/figure-html/map_visualization-1.png)<!-- -->
 
 
 # Ensemble Techniques
