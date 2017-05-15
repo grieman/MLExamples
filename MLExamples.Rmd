@@ -4,7 +4,6 @@ author: "Sam Gonzalez & Graeham Rieman"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
   html_document:
-    keep_md: yes
     toc: yes
     toc_depth: 2
     toc_float:
@@ -71,11 +70,16 @@ write_feather(testset, "testset.feather")
 
 # Data
 
-## NIMST dataset
-We use a subset of the [MNIST handwritten digits dataset](http://yann.lecun.com/exdb/mnist/) to demonstrate the concept of PCA. The NIMST dataset contains "pictures" of handwritten digits from 0 to 9. The "picture" for each of these numbers is stored in a 28 x 28 matrix containing a total of 784 pixels. Each "pixel" is a black/white value with a range of 0 to 255. When plotted in a heatmap style, the darker/light contrast reveals the picture of the number. The first element of our set (labelled as a `r trainset$y[1]`) looks like this:
+## MNIST dataset
+We use a subset of the [MNIST handwritten digits dataset](http://yann.lecun.com/exdb/mnist/) to demonstrate the machine learning concepts. The MNIST dataset contains "pictures" of handwritten digits from 0 to 9. The "picture" for each of these numbers is stored in a 28 x 28 matrix containing a total of 784 pixels. Each "pixel" is a black/white value with a range of 0 to 255. When plotted in a heatmap style, the darker/light contrast reveals the picture of the number. Here's a few fours from our data:
 
 ```{r, shownum}
+par(mfrow=c(2,2))
 show_digit(trainset[1, 1:784])
+show_digit(trainset[6, 1:784])
+show_digit(trainset[9, 1:784])
+show_digit(trainset[13, 1:784])
+par(mfrow=c(1,1))
 ```
 
 ## Subset of NIMST dataset
@@ -84,17 +88,17 @@ For this example we subset the original NIMST data to contain only pictures of d
 # PCA
 
 * Principal Component Analysis is a method of multivariate (multidimensional) data analysis
-* It is used for data exploration and dimensionality reduction. Other applications can include clustering and variable selection.
+* It is used for data exploration and dimensionality reduction. Other applications can include clustering and variable selection
 * Care should be taking when interpreting Principal Component Analysis. Diagnostics are available to understand the model output
-* Statistical inference is possible from PCA but it may require the use of other techniques, such as KNN to complement PCA and form a conclusion from the simplification of the data
+* Statistical inference is possible from PCA, but it may require the use of other techniques, such as KNN to complement PCA and form a conclusion from the simplification of the data
 * Please do not call this method PrinciPLE Component Analysis. That is wrong
 
 ## Basic Theory
 * PCA aims to capture the essence of the multivariate data
 * It provides a high level picture of the entire dataset in two or three "Principal Components" (PCs)
 * It relies on the covariance between all variables to extract the essence of the data. It uses matrix algebra to calculate eigenvalues and eigenvectors from covariance matrix
-* Eigenvectors contain one "weight" for each variable. A linear equation can be formed to using these weights and the value of the variable for each record to calculate an observation's PC1 value.
-* There is one Principal Component for each variable used. 
+* Eigenvectors contain one "weight" for each variable. A linear equation can be formed to using these weights and the value of the variable for each record to calculate an observation's PC1 value
+* There is one Principal Component for each variable used
 + The first principal component (PC1) accounts for most of the data's variation as possible
 + Subsequent PCs accounts for the largest possible amount of variance while being orthagonal to the previous PCs
 + Not all PCs should be used to interpret the data
@@ -275,7 +279,10 @@ print(df_confusion)
 
 ### Theory
 
-A support vector machine it a binary classifier that attempts to maximize the seperation between groups. It fits a hyperplane between the two classes, creating and maximizing a gap between them. This hyperplane is a linear seperator, but can be made nonlinear via kernels and modifying dimensionality. 
+A support vector machine it a binary classifier that attempts to maximize the seperation between groups. It fits a hyperplane between the two classes, creating and maximizing a gap between them. This hyperplane is a linear seperator, but can be made nonlinear via kernels ($$k: \eta \times \eta \rightarrow  \mathbb{R}$$) and modifying dimensionality. 
+
+
+
 
 ![](Images/SVM-illustration.jpg)
 
@@ -464,7 +471,7 @@ print(df_confusion)
 ### Theory
 Artificial neural networks are patterned after biological neural networks, with nodes and connections taking the place of neurons and axons. Input nodes are connected to hidden nodes with calculated weights, and these hidden nodes are connected in the same way to another layer of hidden nodes or to the output nodes. These weights are calculated via [backpropogation](https://en.wikipedia.org/wiki/Backpropagation), usually with a steepest descent or other gradient method. [Simulated Annealing](https://en.wikipedia.org/wiki/Simulated_annealing) and [Genetic Models](https://en.wikipedia.org/wiki/Evolutionary_algorithm) are commonly used alternatives.
 
-The theory of neural networks quickly becomes quite complicated, dealing with much more information than one needs to use them effectively. An exellent demo can be found [here](playground.tensorflow.org) - it enables one to see how changing weights and nodes impacts the model and is more easily understood than the paragraphs that would otherwise be needed.
+The theory of neural networks quickly becomes quite complicated, dealing with much more information than one needs to use them effectively. An exellent demo can be found [here](http://playground.tensorflow.org) - it enables one to see how changing weights and nodes impacts the model and is more easily understood than the paragraphs that would otherwise be needed.
 
 ### Use Cases
 Neural networks may be most useful with complex data which do not have an obvious mathematical solution. They can be used for both classification and model approximation in a numerical application, and have been adapted for robotics, pattern recognition, decision making, and much more. This flexibility is a great strength, but comes at the cost of intensive procesing. Software like Tensorflow and H2O has been developed to spread these calculations across CPUs and GPUs to enable faster speeds and easier distributed processing.
@@ -530,7 +537,7 @@ Naive Bayes is based upon Bayes theorem regarding conditional probabilitites - $
 
 $$
 \begin{align}
-P(x_1=4) &= P(x_1=4|(1,1)=\alpha) + P(x_1=4|(1,2) = \beta) + P(x_1=4|(1,3)=\gamma)+ ... + P(x_1=4|(28,28)=\omega) && \alpha, \beta, \gamma, ...\omega \in (0, 255)
+P(x_1=4) &= P(x_1=4|(1,1)=\alpha) + P(x_1=4|(1,2) = \beta) + P(x_1=4|(1,3)=\gamma)+ ... + P(x_1=4|(28,28)=\omega) && \alpha, \beta, \gamma, ..., \omega \in (0, 255)
 \\       &= \frac{P((1,1)=\alpha|x=4)P(x=4)}{P((1,1)=\alpha)} + ... + \frac{P((28,28)=\omega|x=4)P(x=4)}{P((28,28)=\omega)}  && \text{Using Bayes Theorem}
 \\       &= \frac{P((1,1)=\alpha|x=4) \times .458}{P((1,1)=\alpha)} + ... + \frac{P((28,28)=\omega|x=4) \times .458}{P((28,28)=\omega)}  && \text{P(x=4) =} \frac{982}{2144}
 \\ & \text{With the calculations left to the model, this simplifies to a number very close to 1 for this first point.}
@@ -577,6 +584,7 @@ print(df_confusion)
 
 # Unsupervised Learning
 Unsupervised learning takes a dataset and trys to fit classes to it. The focus is on the data and how it forms classes rather than how classes divide the data.
+
 ## K Means Clustering
 
 ### Theory
