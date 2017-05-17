@@ -589,7 +589,17 @@ Unsupervised learning takes a dataset and trys to fit classes to it. The focus i
 
 ### Theory
 
+K-means is an unsupervised technique which can assign classes to observations. It takes n observations and identifies membership to a class (cluster) by associating each observation with the nearest mean. The desired number of clusters, k, is defined by the user. The algorithm is usually seeded with an initial number (guess) of k clusters which are then iteratively optimized to the desired number of clusters by minimizing the within cluster variance. 
+
+Different seeding values can produce different results in terms of cluster membership for each record. Also, care should be taken to ensure that the correct number of classes is chosen before reporting overall cluster results. Cluster memberships can be overlaid over a dimensionally reduced plot (usually PCA) to visualize cluster performance. Overlap between clusters is usually an indicator that too many clusters were selected for the analysis. 
+
+Software packages usually allow for a range of k over which to calculate cluster memberships. 
+
+
 ### Results using the NIMST Data
+
+The NIMST data was processed through Kmeans clustering with k = 3 since we know we have three types of digits (1, 4 and 9). The cluster memberships are overlaid on PCA's first and second components to visualize membership. 
+
 
 ```{r Kmeansclustering}
 ##K MEANS CLUSTERING
@@ -600,6 +610,7 @@ trainsetkclus <- stats::kmeans(unlabeled,nclusters,nstart = 20)
 plot_ly(as.data.frame(modpca$x), x=~PC1, y=~PC2, type = "scatter", color = as.factor(trainset$y), mode='markers')
 ```
 
+Points belonging to digits 4 and 9 show some overlap. this is due to the nature of the digits 4 and 9 being too similar in terms of their pixel mapping. A better example is shown below.
 
 
 ### Demonstration using a Different Dataset, World Happiness 2016
