@@ -4,6 +4,7 @@ author: "Sam Gonzalez & Graeham Rieman"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
   html_document:
+    keep_md: yes
     toc: yes
     toc_depth: 2
     toc_float:
@@ -175,7 +176,7 @@ show_digit(modpca$rotation[,4],axes=FALSE)
 par(mfrow=c(1,1))
 ```
 
-Since each observation is made up of a combination of these Principle Components, we would expect the zeros to have high PC1 values, which we see is true by this plot below, with PC1 on the x-axis and PC2 on the y-axis. However, most of the classes are hard to separate.
+Since each observation is made up of a combination of these Principle Components, we would expect the ones to have low PC1 values, which we see is true by this plot below, with PC1 on the x-axis and PC2 on the y-axis. However, most of the classes are hard to separate.
 
 ```{r PCA plot}
 plot_ly(as.data.frame(modpca$x), x=~PC1, y=~PC2, z=~PC3, color = as.factor(trainset$y), type = 'scatter3d', mode='markers')
@@ -279,7 +280,7 @@ print(df_confusion)
 
 ### Theory
 
-A support vector machine it a binary classifier that attempts to maximize the seperation between groups. It fits a hyperplane between the two classes, creating and maximizing a gap between them. This hyperplane is a linear seperator, but can be made nonlinear via kernels ($$k: \eta \times \eta \rightarrow  \mathbb{R}$$) and modifying dimensionality. 
+A support vector machine it a binary classifier that attempts to maximize the seperation between groups. It fits a hyperplane between the two classes, creating and maximizing a gap between them. This hyperplane is a linear seperator, but can be made nonlinear via kernels ($k: \eta \times \eta \rightarrow  \mathbb{R}$) and modifying dimensionality. 
 
 
 
@@ -345,7 +346,7 @@ print(df_confusion)
 * K-Nearest Neighbors uses a majority vote of the closest $k$ points to classify any given point.
 * The distance metric and value of $k$ can be modified, but a relatively small $k$ value (often $k = \sqrt{n}$ to balance speed and noise in complex sets) produces acceptable results without requiring too much processing power.
 * The only assumption that this algorithm makes is that the points are in a metric space, which most datasets ought to satisfy without any modification.
-* A one-nearest neighbor algorithm will have a maximum error rate of wo times the dataset's Bayes error rate, the irreducible error of a set.
+* A one-nearest neighbor algorithm will have a maximum error rate of two times the dataset's Bayes error rate, the irreducible error of a set.
 
 ### Use Cases
 KNN is often used because it is easy to explain, and it is most often used when the concept of neighbors translates well to similarity. As data sets become more abstract and complex, KNN is still a viable option, but may not be as useful as other algorithms since it has no model, just a distance matrix and observations.
